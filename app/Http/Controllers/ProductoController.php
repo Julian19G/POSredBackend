@@ -8,79 +8,78 @@ use Illuminate\Http\Request;
 class ProductoController extends Controller
 {
     /**
-     * Mostrar todos los productos
+     * Mostrar listado de productos.
      */
     public function index()
     {
         $productos = Producto::all();
-        return response()->json($productos);
+        return view('productos.index', compact('productos'));
     }
 
     /**
-     * Crear un nuevo producto
+     * Mostrar formulario de creación.
+     */
+    public function create()
+    {
+        return view('productos.create');
+    }
+
+    /**
+     * Guardar un nuevo producto.
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $request->validate([
             'nombre' => 'required|string|max:255',
+            'descripcion' => 'nullable|string',
             'precio' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
         ]);
 
-        $producto = Producto::create($validated);
+        Producto::create($request->all());
 
-        return response()->json([
-            'message' => 'Producto creado correctamente',
-            'producto' => $producto
-        ], 201);
+        return redirect()->route('productos.index')->with('success', 'Producto creado exitosamente');
     }
 
     /**
-     * Mostrar un producto específico
+     * Mostrar un producto específico.
      */
-  // ProductoController.php
-
-public function show($id)
-{
-    $producto = Producto::with('ventas')->findOrFail($id);
-
-    foreach ($producto->ventas as $venta) {
-        echo "Venta ID: " . $venta->id;
-        echo "Cantidad vendida: " . $venta->pivot->cantidad;
+    public function show(Producto $producto)
+    {
+        return view('productos.show', compact('producto'));
     }
 
-    return response()->json($producto);
-}
-
+    /**
+     * Mostrar formulario de edición.
+     */
+    public function edit(Producto $producto)
+    {
+        return view('productos.edit', compact('producto'));
+    }
 
     /**
-     * Actualizar un producto
+     * Actualizar producto.
      */
     public function update(Request $request, Producto $producto)
     {
-        $validated = $request->validate([
-            'nombre' => 'sometimes|required|string|max:255',
-            'precio' => 'sometimes|required|numeric|min:0',
-            'stock' => 'sometimes|required|integer|min:0',
+        $request->validate([
+            'nombre' => 'required|string|max:255',
+            'descripcion' => 'nullable|string',
+            'precio' => 'required|numeric|min:0',
+            'stock' => 'required|integer|min:0',
         ]);
 
-        $producto->update($validated);
+        $producto->update($request->all());
 
-        return response()->json([
-            'message' => 'Producto actualizado correctamente',
-            'producto' => $producto
-        ]);
+        return redirect()->route('productos.index')->with('success', 'Producto actualizado correctamente');
     }
 
     /**
-     * Eliminar un producto
+     * Eliminar un producto.
      */
     public function destroy(Producto $producto)
     {
         $producto->delete();
-
-        return response()->json([
-            'message' => 'Producto eliminado correctamente'
-        ]);
+        return redirect()->route('productos.index')->with('success', 'Producto eliminado correctamente');
     }
 }
