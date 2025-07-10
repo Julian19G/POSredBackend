@@ -11,14 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-       Schema::create('clientes', function (Blueprint $table) {
+        Schema::create('clientes', function (Blueprint $table) {
             $table->id();
             $table->string('nombre', 100);
-            $table->string('telefono', 20)->nullable();
-            $table->string('email', 100)->nullable();
-            $table->text('direccion')->nullable();
-            $table->timestamps(); // Crea created_at y updated_at
+            $table->string('telefono', 20)->unique(); // No permitir duplicados
+            $table->string('email', 100)->unique();   // Email obligatorio y único
+            $table->text('direccion');               // Obligatorio
+
+            // Referencia a otro cliente que lo refirió
+            $table->unsignedBigInteger('referido_por')->nullable();
+            $table->foreign('referido_por')->references('id')->on('clientes')->onDelete('set null');
+
+            $table->timestamps();
         });
+
     }
 
     /**

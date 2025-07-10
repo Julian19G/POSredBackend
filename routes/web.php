@@ -12,3 +12,4 @@ Route::get('/', function () {
 Route::resource('ventas', VentaController::class);
 Route::resource('productos', ProductoController::class);
 Route::resource('detalle_ventas', DetalleVentaController::class);
+Route::resource('clientes', ClienteController::class);
