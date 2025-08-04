@@ -28,19 +28,19 @@ class ClienteController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'nombre' => 'required|string|max:100',
-            'telefono' => 'required|string|unique::clientes',
-            'email' => 'required|email|max:100|unique:clientes',
-            'direccion' => 'required|string',
-            'referido_por' => 'nullable|exists::clientes,id',
-        ]);
+ public function store(Request $request)
+{
+    $validated = $request->validate([
+        'nombre' => 'required|string|max:100',
+        'telefono' => 'required|string|unique:clientes,telefono',
+        'email' => 'required|email|max:100|unique:clientes,email',
+        'direccion' => 'required|string',
+        'referido_por' => 'nullable|exists:clientes,id',
+    ]);
 
-        Cliente::create($validated);
-        return redirect()->route('clientes.index')->with('success','Cliente creado Correctamente.');
-    }
+    Cliente::create($validated);
+    return redirect()->route('clientes.index')->with('success','Cliente creado correctamente.');
+}
 
     /**
      * Display the specified resource.
@@ -65,20 +65,21 @@ class ClienteController extends Controller
      * Update the specified resource in storage.
      */
     public function update(Request $request, string $id)
-    {
-        $cliente = Cliente::findOrFail($id);
+{
+    $cliente = Cliente::findOrFail($id);
 
-        $validated = $request->validate([
-            'nombre' => 'required|string|max:100',
-            'telefono' => 'required|string|max:20|unique:clientes,telefono,' . $id,
-            'email' => 'required|email|max:100|unique:clientes,email,' . $id,
-            'direccion' => 'required|string',
-            'referido_por' => 'nullable|exists:clientes,id|not_in:' . $id,
-        ]);
+    $validated = $request->validate([
+        'nombre' => 'required|string|max:100',
+        'telefono' => 'required|string|unique:clientes,telefono,' . $id,
+        'email' => 'required|email|max:100|unique:clientes,email,' . $id,
+        'direccion' => 'required|string',
+        // evitar que se refiera a sí mismo
+        'referido_por' => ['nullable', 'exists:clientes,id', "not_in:{$id}"],
+    ]);
 
-        $cliente->update($validated);
-        return redirect()->route('clientes.index')->with('sucess','Cliente Actualizado Correctamente');
-    }
+    $cliente->update($validated);
+    return redirect()->route('clientes.index')->with('success','Cliente actualizado correctamente.');
+}
 
     /**
      * Remove the specified resource from storage.

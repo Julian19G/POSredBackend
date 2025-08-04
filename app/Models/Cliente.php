@@ -22,7 +22,7 @@ class Cliente extends Model
     //Relacionar que un cliente fue referido por otro
     public function referidoPor()
     {
-        return $this->belongsTo(Cliente::Class, 'referido_por');
+        return $this->belongsTo(Cliente::class, 'referido_por');
     }
 
     //Relacionar que un cliente refiere a otros

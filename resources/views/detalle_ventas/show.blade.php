@@ -2,28 +2,19 @@
 
 @section('content')
 <div class="container">
-    <h1>Detalle de Venta #{{ $detalleVenta->id }}</h1>
+    <h2>Detalle del cliente</h2>
 
-    <div class="mb-3">
-        <strong>Venta ID:</strong> {{ $detalleVenta->venta_id }}
-    </div>
+    <ul class="list-group mb-3">
+        <li class="list-group-item"><strong>Nombre:</strong> {{ $cliente->nombre }}</li>
+        <li class="list-group-item"><strong>Email:</strong> {{ $cliente->email }}</li>
+        <li class="list-group-item"><strong>Teléfono:</strong> {{ $cliente->telefono }}</li>
+        <li class="list-group-item"><strong>Dirección:</strong> {{ $cliente->direccion }}</li>
+        <li class="list-group-item">
+            <strong>Referido por:</strong> {{ $cliente->referidoPor->nombre ?? 'Ninguno' }}
+        </li>
+    </ul>
 
-    <div class="mb-3">
-        <strong>Producto:</strong> {{ $detalleVenta->producto->nombre ?? 'Producto eliminado' }}
-    </div>
-
-    <div class="mb-3">
-        <strong>Cantidad:</strong> {{ $detalleVenta->cantidad }}
-    </div>
-
-    <div class="mb-3">
-        <strong>Precio Unitario:</strong> ${{ number_format($detalleVenta->precio_unitario, 2) }}
-    </div>
-
-    <div class="mb-3">
-        <strong>Subtotal:</strong> ${{ number_format($detalleVenta->subtotal, 2) }}
-    </div>
-
-    <a href="{{ route('detalle_ventas.index') }}" class="btn btn-secondary">Volver</a>
+    <a href="{{ route('clientes.edit', $cliente) }}" class="btn btn-warning">Editar</a>
+    <a href="{{ route('clientes.index') }}" class="btn btn-secondary">Volver</a>
 </div>
 @endsection
