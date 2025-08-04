@@ -14,6 +14,8 @@
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a class="nav-link" href="{{ route('ventas.index') }}">Ventas</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('productos.index') }}">Productos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('clientes.index') }}">Clientes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('detalle_ventas.index') }}">Detalle Ventas</a></li>
                 </ul>
             </div>
         </div>
