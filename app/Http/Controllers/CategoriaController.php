@@ -50,6 +50,17 @@ class CategoriaController extends Controller
         return redirect()->route('categorias.index')->with('success', 'Categoría creada correctamente.');
     }
 
+
+    public function show($id)
+{
+    // Busca la categoría o lanza un error 404 si no existe
+    $categoria = Categoria::findOrFail($id);
+
+    // Retorna la vista show.blade.php
+    return view('categorias.show', compact('categoria'));
+}
+
+
     /**
      * Muestra el formulario para editar una categoría.
      */
