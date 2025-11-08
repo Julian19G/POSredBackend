@@ -9,7 +9,20 @@ class Producto extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['nombre', 'descripcion', 'precio', 'stock'];
+    protected $fillable = [
+        'nombre',
+        'descripcion',
+        'precio',
+        'stock',
+        'imagen',
+        'activo',
+        'categoria_id',
+    ];
+
+    public function categoria()
+    {
+        return $this->belogsTo(categoria::class);
+    }
 
     /**
      * Relación muchos a muchos con ventas usando la tabla pivot detalle_ventas.
@@ -19,5 +32,10 @@ class Producto extends Model
         return $this->belongsToMany(Venta::class, 'detalle_ventas')
                     ->withPivot('cantidad', 'precio_unitario', 'subtotal')
                     ->withTimestamps();
+    }
+
+    public function scopeActivos($query)
+    {
+        return $query->where('activo',true);
     }
 }

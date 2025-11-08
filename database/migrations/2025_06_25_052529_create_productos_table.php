@@ -17,6 +17,16 @@ return new class extends Migration
         $table->text('descripcion')->nullable();
         $table->decimal('precio', 10, 2);
         $table->integer('stock')->default(0);
+        $table->string('imagen')->nullable();
+        $table->boolean('activo')->default(true);
+
+        
+        //Relacion con categoria
+        $table->foreignId('categoria_id')
+        ->nullable()
+        ->constrained('categorias')
+        ->nullOnDelete();
+
         $table->timestamps();
     });
     }
