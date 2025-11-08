@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Categoria;
+use App\Models\Venta;
 
 class Producto extends Model
 {
@@ -21,7 +23,7 @@ class Producto extends Model
 
     public function categoria()
     {
-        return $this->belogsTo(categoria::class);
+        return $this->belongsTo(Categoria::class, 'categoria_id');
     }
 
     /**
@@ -36,6 +38,6 @@ class Producto extends Model
 
     public function scopeActivos($query)
     {
-        return $query->where('activo',true);
+        return $query->where('activo', true);
     }
 }

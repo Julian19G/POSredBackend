@@ -37,6 +37,34 @@
             <input type="number" name="stock" class="form-control" required>
         </div>
 
+        <div class="mb-3"> 
+            <label for= "categoria_id" class="form-label">Categoria</label>
+            <select name="categoria_id" class="form-select">
+                <option value=""> --Selecciona una categoria -- </option>
+                @foreach($categorias as $categoria)
+                <option value="{{$categoria->id }}" {{ old('categoria_id') == $categoria->id ? 'selected' : '' }}>
+                    {{$categoria->nombre}}
+                </option>
+                @endforeach
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label for = "imagen" class="form-label">Imagen </label>
+            <input type="file" name="imagen" class="form-control" accept="imagen/*">
+        </div>
+
+<div class="mb-3">
+    <label for="activo" class="form-label">Estado</label>
+    <select class="form-select" name="activo" id="activo">
+        <option value="1" selected>Activo</option>
+        <option value="0">Inactivo</option>
+    </select>
+</div>
+
+
+
+
         <button type="submit" class="btn btn-success">Guardar</button>
         <a href="{{ route('productos.index') }}" class="btn btn-secondary">Cancelar</a>
     </form>

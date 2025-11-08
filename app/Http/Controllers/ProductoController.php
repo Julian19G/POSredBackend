@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Producto;
+use App\Models\Categoria; // ✅ Importamos el modelo
 use Illuminate\Http\Request;
 
 class ProductoController extends Controller
@@ -12,7 +13,7 @@ class ProductoController extends Controller
      */
     public function index()
     {
-        $productos = Producto::all();
+        $productos = Producto::with('categoria')->get(); // Carga relación con categoría
         return view('productos.index', compact('productos'));
     }
 
@@ -21,7 +22,8 @@ class ProductoController extends Controller
      */
     public function create()
     {
-        return view('productos.create');
+        $categorias = Categoria::all(); // ✅ ahora sí definimos la variable
+        return view('productos.create', compact('categorias'));
     }
 
     /**
@@ -34,6 +36,9 @@ class ProductoController extends Controller
             'descripcion' => 'nullable|string',
             'precio' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
+            'categoria_id' => 'nullable|exists:categorias,id',
+            'imagen' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'activo' => 'boolean'
         ]);
 
         Producto::create($request->all());
@@ -54,7 +59,8 @@ class ProductoController extends Controller
      */
     public function edit(Producto $producto)
     {
-        return view('productos.edit', compact('producto'));
+        $categorias = Categoria::all(); // ✅ también lo incluimos en la edición
+        return view('productos.edit', compact('producto', 'categorias'));
     }
 
     /**
@@ -67,6 +73,9 @@ class ProductoController extends Controller
             'descripcion' => 'nullable|string',
             'precio' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
+            'categoria_id' => 'nullable|exists:categorias,id',
+            'imagen' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'activo' => 'boolean'
         ]);
 
         $producto->update($request->all());
