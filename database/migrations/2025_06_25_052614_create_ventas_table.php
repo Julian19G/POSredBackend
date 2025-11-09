@@ -21,7 +21,7 @@ return new class extends Migration
 
             // Totales y descuentos
             $table->decimal('subtotal', 10, 2)->default(0); // Total sin descuento ni envío
-            $table->decimal('descuento_manual', 10, 2)->default(0); // Descuento directo aplicado por el vendedor
+            $table->decimal('descuento_manual', 10, 2)->default(0); // Descuento aplicado por el vendedor
             $table->string('motivo_descuento')->nullable(); // Ejemplo: "por cliente frecuente"
 
             // (Futuro) Descuento de tabla
@@ -30,9 +30,10 @@ return new class extends Migration
                 ->constrained('descuentos')
                 ->nullOnDelete();
 
-            // Costo y dirección de envío
-            $table->decimal('costo_envio', 10, 2)->default(0);
-            $table->string('direccion_envio')->nullable();
+            // Envío
+            $table->boolean('envio')->default(false); // ¿Se realiza envío?
+            $table->decimal('costo_envio', 10, 2)->default(0); // Solo se usa si tiene_envio = true
+            $table->string('direccion_envio')->nullable(); // Solo se usa si tiene_envio = true
 
             // Estado de la venta 
             $table->enum('estado', ['pendiente', 'pagada', 'cancelada'])->default('pendiente');
