@@ -13,7 +13,7 @@ class Venta extends Model
     use HasFactory;
 
     /**
-     * Campos que se pueden asignar masivamente
+     * Campos que se pueden asignar masivamente.
      */
     protected $fillable = [
         'cliente_id',
@@ -21,6 +21,7 @@ class Venta extends Model
         'descuento_manual',
         'motivo_descuento',
         'descuento_id',
+        'envio',
         'costo_envio',
         'direccion_envio',
         'estado',
@@ -28,7 +29,18 @@ class Venta extends Model
     ];
 
     /**
-     * Relación: una venta pertenece a un cliente
+     * Casting de tipos de datos.
+     */
+    protected $casts = [
+        'envio' => 'boolean',
+        'subtotal' => 'float',
+        'descuento_manual' => 'float',
+        'costo_envio' => 'float',
+        'total' => 'float',
+    ];
+
+    /**
+     * Relación: una venta pertenece a un cliente.
      */
     public function cliente()
     {
@@ -36,7 +48,7 @@ class Venta extends Model
     }
 
     /**
-     * Relación: una venta puede tener un descuento asociado
+     * Relación: una venta puede tener un descuento asociado.
      */
     public function descuento()
     {
@@ -44,7 +56,7 @@ class Venta extends Model
     }
 
     /**
-     * Relación: una venta tiene muchos detalles
+     * Relación: una venta tiene muchos detalles.
      */
     public function detalles()
     {
@@ -52,21 +64,21 @@ class Venta extends Model
     }
 
     /**
-     * Calcula el total final de la venta (subtotal - descuento + envío)
+     * Calcula el total final de la venta (subtotal - descuento + envío).
      */
-    public function calcularTotal()
+    public function calcularTotal(): float
     {
-        $subtotal = $this->subtotal;
+        $subtotal = $this->subtotal ?? 0;
         $descuento = $this->descuento_manual ?? 0;
-        $envio = $this->costo_envio ?? 0;
+        $envio = $this->envio ? ($this->costo_envio ?? 0) : 0;
 
         return max($subtotal - $descuento + $envio, 0);
     }
 
     /**
-     * Mutador automático al guardar: recalcula el total
+     * Evento de modelo: recalcula el total automáticamente al guardar.
      */
-    public static function boot()
+    protected static function boot()
     {
         parent::boot();
 
@@ -76,9 +88,9 @@ class Venta extends Model
     }
 
     /**
-     * Formato más legible del estado (por si lo usas en vistas)
+     * Accesor para mostrar el estado con la primera letra mayúscula.
      */
-    public function getEstadoLabelAttribute()
+    public function getEstadoLabelAttribute(): string
     {
         return ucfirst($this->estado);
     }

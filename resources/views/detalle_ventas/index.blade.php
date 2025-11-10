@@ -2,49 +2,82 @@
 
 @section('content')
 <div class="container">
-    <h1>Detalles de Venta</h1>
+    <h1 class="mb-4">📋 Detalles de Ventas</h1>
 
+    {{-- Mensajes de éxito --}}
     @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
     @endif
 
-    <a href="{{ route('detalle_ventas.create') }}" class="btn btn-primary mb-3">Crear Detalle de Venta</a>
+    {{-- Botón para crear nuevo detalle --}}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a href="{{ route('detalle_ventas.create') }}" class="btn btn-primary">
+            ➕ Nuevo Detalle de Venta
+        </a>
+        <form method="GET" action="{{ route('detalle_ventas.index') }}" class="d-flex">
+            <input type="text" name="search" class="form-control me-2" placeholder="Buscar por producto o venta..." value="{{ request('search') }}">
+            <button class="btn btn-outline-secondary" type="submit">Buscar</button>
+        </form>
+    </div>
 
-    <table class="table table-bordered table-striped">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Venta ID</th>
-                <th>Producto</th>
-                <th>Cantidad</th>
-                <th>Precio Unitario</th>
-                <th>Subtotal</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($detalleVentas as $detalle)
+    {{-- Tabla principal --}}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle text-center">
+            <thead class="table-dark">
                 <tr>
-                    <td>{{ $detalle->id }}</td>
-                    <td>{{ $detalle->venta_id }}</td>
-                    <td>{{ $detalle->producto->nombre ?? 'Producto eliminado' }}</td>
-                    <td>{{ $detalle->cantidad }}</td>
-                    <td>${{ number_format($detalle->precio_unitario, 2) }}</td>
-                    <td>${{ number_format($detalle->subtotal, 2) }}</td>
-                    <td>
-                        <a href="{{ route('detalle_ventas.show', $detalle->id) }}" class="btn btn-info btn-sm">Ver</a>
-                        <a href="{{ route('detalle_ventas.edit', $detalle->id) }}" class="btn btn-warning btn-sm">Editar</a>
-                        <form action="{{ route('detalle_ventas.destroy', $detalle->id) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Seguro que quieres eliminar este detalle?');">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
-                        </form>
-                    </td>
+                    <th>ID</th>
+                    <th>Venta</th>
+                    <th>Producto</th>
+                    <th>Código</th>
+                    <th>Cantidad</th>
+                    <th>Precio Unitario</th>
+                    <th>Descuento</th>
+                    <th>Impuesto</th>
+                    <th>Subtotal</th>
+                    <th>Fecha</th>
+                    <th>Acciones</th>
                 </tr>
-            @endforeach
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @forelse($detalleVentas as $detalle)
+                    <tr>
+                        <td>{{ $detalle->id }}</td>
+                        <td>#{{ $detalle->venta_id }}</td>
+                        <td>{{ $detalle->nombre_producto }}</td>
+                        <td>{{ $detalle->codigo_producto ?? '—' }}</td>
+                        <td>{{ $detalle->cantidad }}</td>
+                        <td>${{ number_format($detalle->precio_unitario, 2) }}</td>
+                        <td>${{ number_format($detalle->descuento_aplicado, 2) }}</td>
+                        <td>${{ number_format($detalle->impuesto, 2) }}</td>
+                        <td><strong>${{ number_format($detalle->subtotal, 2) }}</strong></td>
+                        <td>{{ $detalle->created_at->format('d/m/Y') }}</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{{ route('detalle_ventas.show', $detalle->id) }}" class="btn btn-sm btn-outline-info">👁 Ver</a>
+                                <a href="{{ route('detalle_ventas.edit', $detalle->id) }}" class="btn btn-sm btn-outline-warning">✏️ Editar</a>
+                                <form action="{{ route('detalle_ventas.destroy', $detalle->id) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Seguro que deseas eliminar este registro?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">🗑 Eliminar</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="11" class="text-muted">No hay detalles de ventas registrados.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
 
-    {{ $detalleVentas->links() }}
+    {{-- Paginación --}}
+    <div class="d-flex justify-content-center mt-3">
+        {{ $detalleVentas->links() }}
+    </div>
 </div>
 @endsection

@@ -12,16 +12,19 @@ use Illuminate\Support\Facades\DB;
 class VentaController extends Controller
 {
     /**
-     * Muestra todas las ventas
+     * Muestra todas las ventas.
      */
     public function index()
     {
-        $ventas = Venta::with(['cliente', 'detalles.producto'])->latest()->get();
+        $ventas = Venta::with(['cliente', 'detalles.producto'])
+            ->latest()
+            ->get();
+
         return view('ventas.index', compact('ventas'));
     }
 
     /**
-     * Muestra el formulario de creación de una venta
+     * Muestra el formulario de creación de una venta.
      */
     public function create()
     {
@@ -31,18 +34,19 @@ class VentaController extends Controller
     }
 
     /**
-     * Guarda una nueva venta
+     * Guarda una nueva venta.
      */
     public function store(Request $request)
     {
         $request->validate([
             'cliente_id' => 'required|exists:clientes,id',
-            'productos' => 'required|array',
+            'productos' => 'required|array|min:1',
             'productos.*' => 'exists:productos,id',
-            'cantidades' => 'required|array',
+            'cantidades' => 'required|array|min:1',
             'cantidades.*' => 'integer|min:1',
             'descuento_manual' => 'nullable|numeric|min:0',
             'motivo_descuento' => 'nullable|string|max:255',
+            'envio' => 'boolean',
             'costo_envio' => 'nullable|numeric|min:0',
             'direccion_envio' => 'nullable|string|max:255',
         ]);
@@ -64,24 +68,24 @@ class VentaController extends Controller
                 'subtotal' => $subtotal,
                 'descuento_manual' => $request->descuento_manual ?? 0,
                 'motivo_descuento' => $request->motivo_descuento,
+                'envio' => $request->boolean('envio', false),
                 'costo_envio' => $request->costo_envio ?? 0,
                 'direccion_envio' => $request->direccion_envio,
                 'estado' => 'pendiente',
-                'total' => 0, // Se recalcula en el modelo automáticamente
             ]);
 
             // Registrar detalles
             foreach ($request->productos as $i => $producto_id) {
                 $producto = Producto::findOrFail($producto_id);
                 $cantidad = $request->cantidades[$i];
-                $subtotal = $producto->precio * $cantidad;
+                $subtotalDetalle = $producto->precio * $cantidad;
 
                 DetalleVenta::create([
                     'venta_id' => $venta->id,
                     'producto_id' => $producto_id,
                     'cantidad' => $cantidad,
                     'precio_unitario' => $producto->precio,
-                    'subtotal' => $subtotal
+                    'subtotal' => $subtotalDetalle,
                 ]);
 
                 // Actualizar stock
@@ -98,7 +102,7 @@ class VentaController extends Controller
     }
 
     /**
-     * Muestra una venta específica
+     * Muestra una venta específica.
      */
     public function show($id)
     {
@@ -107,18 +111,18 @@ class VentaController extends Controller
     }
 
     /**
-     * Muestra el formulario para editar una venta
+     * Muestra el formulario para editar una venta.
      */
     public function edit($id)
     {
-        $venta = Venta::with('detalles')->findOrFail($id);
+        $venta = Venta::with('detalles.producto')->findOrFail($id);
         $productos = Producto::all();
         $clientes = Cliente::all();
         return view('ventas.edit', compact('venta', 'productos', 'clientes'));
     }
 
     /**
-     * Actualiza una venta existente
+     * Actualiza una venta existente.
      */
     public function update(Request $request, $id)
     {
@@ -126,12 +130,13 @@ class VentaController extends Controller
 
         $request->validate([
             'cliente_id' => 'required|exists:clientes,id',
-            'productos' => 'required|array',
+            'productos' => 'required|array|min:1',
             'productos.*' => 'exists:productos,id',
-            'cantidades' => 'required|array',
+            'cantidades' => 'required|array|min:1',
             'cantidades.*' => 'integer|min:1',
             'descuento_manual' => 'nullable|numeric|min:0',
             'motivo_descuento' => 'nullable|string|max:255',
+            'envio' => 'boolean',
             'costo_envio' => 'nullable|numeric|min:0',
             'direccion_envio' => 'nullable|string|max:255',
             'estado' => 'in:pendiente,pagada,cancelada',
@@ -139,7 +144,7 @@ class VentaController extends Controller
 
         DB::beginTransaction();
         try {
-            // Revertir stock
+            // Revertir stock anterior
             foreach ($venta->detalles as $detalle) {
                 $detalle->producto->increment('stock', $detalle->cantidad);
             }
@@ -161,23 +166,24 @@ class VentaController extends Controller
                 'subtotal' => $subtotal,
                 'descuento_manual' => $request->descuento_manual ?? 0,
                 'motivo_descuento' => $request->motivo_descuento,
+                'envio' => $request->boolean('envio', false),
                 'costo_envio' => $request->costo_envio ?? 0,
                 'direccion_envio' => $request->direccion_envio,
                 'estado' => $request->estado ?? 'pendiente',
             ]);
 
-            // Volver a agregar detalles
+            // Registrar nuevos detalles
             foreach ($request->productos as $i => $producto_id) {
                 $producto = Producto::findOrFail($producto_id);
                 $cantidad = $request->cantidades[$i];
-                $subtotal = $producto->precio * $cantidad;
+                $subtotalDetalle = $producto->precio * $cantidad;
 
                 DetalleVenta::create([
                     'venta_id' => $venta->id,
                     'producto_id' => $producto_id,
                     'cantidad' => $cantidad,
                     'precio_unitario' => $producto->precio,
-                    'subtotal' => $subtotal
+                    'subtotal' => $subtotalDetalle,
                 ]);
 
                 $producto->decrement('stock', $cantidad);
@@ -193,7 +199,7 @@ class VentaController extends Controller
     }
 
     /**
-     * Elimina una venta
+     * Elimina una venta.
      */
     public function destroy($id)
     {
