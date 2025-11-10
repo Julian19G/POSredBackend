@@ -18,7 +18,7 @@
     <form action="{{ route('ventas.store') }}" method="POST">
         @csrf
 
-        {{-- Selección de Cliente --}}
+        {{-- Cliente --}}
         <div class="mb-3">
             <label for="cliente_id" class="form-label fw-semibold">Cliente</label>
             <select name="cliente_id" id="cliente_id" class="form-select" required>
@@ -30,40 +30,58 @@
         </div>
 
         {{-- Productos --}}
-        <h5 class="mt-4">Productos</h5>
+        <h5 class="mt-4 fw-bold">Productos</h5>
         <div id="productos-container">
             <div class="producto-row row mb-3 g-2 align-items-end">
-                <div class="col-md-5">
+                <div class="col-md-6">
                     <label class="form-label">Producto</label>
                     <select name="productos[]" class="form-select" required>
                         <option value="">Seleccione un producto</option>
                         @foreach($productos as $producto)
                             <option value="{{ $producto->id }}">
-                                {{ $producto->nombre }} - ${{ number_format($producto->precio, 2, ',', '.') }}
+                                {{ $producto->nombre }} — ${{ number_format($producto->precio, 2, ',', '.') }} (Stock: {{ $producto->stock }})
                             </option>
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-2">
+
+                <div class="col-md-4">
                     <label class="form-label">Cantidad</label>
                     <input type="number" name="cantidades[]" class="form-control" min="1" value="1" required>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Descuento manual ($)</label>
-                    <input type="number" name="descuentos[]" class="form-control" min="0" value="0">
-                </div>
+
                 <div class="col-md-2 d-flex align-items-end">
                     <button type="button" class="btn btn-danger btn-remove">✖</button>
                 </div>
             </div>
         </div>
 
-        <button type="button" id="add-producto" class="btn btn-secondary mb-3">➕ Agregar otro producto</button>
+        <button type="button" id="add-producto" class="btn btn-secondary mb-4">➕ Agregar otro producto</button>
 
-        {{-- Dirección de envío --}}
-        <div class="mb-3">
-            <label for="direccion_envio" class="form-label fw-semibold">Dirección de envío</label>
-            <input type="text" name="direccion_envio" id="direccion_envio" class="form-control" placeholder="Opcional">
+        <hr>
+
+        {{-- Descuento manual --}}
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="descuento_manual" class="form-label fw-semibold">Descuento manual ($)</label>
+                <input type="number" step="0.01" name="descuento_manual" id="descuento_manual" class="form-control" value="0" min="0">
+            </div>
+            <div class="col-md-6">
+                <label for="motivo_descuento" class="form-label fw-semibold">Motivo del descuento</label>
+                <input type="text" name="motivo_descuento" id="motivo_descuento" class="form-control" placeholder="Ejemplo: cliente frecuente">
+            </div>
+        </div>
+
+        {{-- Envío --}}
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="costo_envio" class="form-label fw-semibold">Costo de envío ($)</label>
+                <input type="number" step="0.01" name="costo_envio" id="costo_envio" class="form-control" value="0" min="0">
+            </div>
+            <div class="col-md-6">
+                <label for="direccion_envio" class="form-label fw-semibold">Dirección de envío</label>
+                <input type="text" name="direccion_envio" id="direccion_envio" class="form-control" placeholder="Opcional, si aplica envío">
+            </div>
         </div>
 
         {{-- Estado --}}
@@ -76,14 +94,8 @@
             </select>
         </div>
 
-        {{-- Motivo de descuento --}}
-        <div class="mb-3">
-            <label for="motivo_descuento" class="form-label fw-semibold">Motivo de descuento</label>
-            <input type="text" name="motivo_descuento" id="motivo_descuento" class="form-control" placeholder="Opcional, por ejemplo: cliente frecuente">
-        </div>
-
-        {{-- Botón Registrar --}}
-        <button type="submit" class="btn btn-primary">
+        {{-- Botón guardar --}}
+        <button type="submit" class="btn btn-primary mt-3">
             💾 Registrar Venta
         </button>
     </form>
@@ -91,16 +103,14 @@
 
 {{-- Script para agregar/quitar productos --}}
 <script>
-    const addBtn = document.getElementById('add-producto');
-    const container = document.getElementById('productos-container');
-
-    addBtn.addEventListener('click', function () {
+    document.getElementById('add-producto').addEventListener('click', function () {
+        const container = document.getElementById('productos-container');
         const firstRow = container.querySelector('.producto-row');
         const newRow = firstRow.cloneNode(true);
 
         newRow.querySelectorAll('select, input').forEach(el => {
             if (el.tagName === 'SELECT') el.selectedIndex = 0;
-            else el.value = el.getAttribute('min') || '';
+            if (el.type === 'number') el.value = el.min || 1;
         });
 
         container.appendChild(newRow);

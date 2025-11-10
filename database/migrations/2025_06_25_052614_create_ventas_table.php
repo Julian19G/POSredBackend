@@ -20,9 +20,9 @@ return new class extends Migration
                 ->onDelete('cascade');
 
             // Totales y descuentos
-            $table->decimal('subtotal', 10, 2)->default(0); // Total sin descuento ni envío
-            $table->decimal('descuento_manual', 10, 2)->default(0); // Descuento aplicado por el vendedor
-            $table->string('motivo_descuento')->nullable(); // Ejemplo: "por cliente frecuente"
+            $table->decimal('subtotal', 10, 2)->default(0);
+            $table->decimal('descuento_manual', 10, 2)->default(0);
+            $table->string('motivo_descuento')->nullable();
 
             // (Futuro) Descuento de tabla
             $table->foreignId('descuento_id')
@@ -31,14 +31,14 @@ return new class extends Migration
                 ->nullOnDelete();
 
             // Envío
-            $table->boolean('envio')->default(false); // ¿Se realiza envío?
-            $table->decimal('costo_envio', 10, 2)->default(0); // Solo se usa si tiene_envio = true
-            $table->string('direccion_envio')->nullable(); // Solo se usa si tiene_envio = true
+            $table->boolean('envio')->default(false);
+            $table->decimal('costo_envio', 10, 2)->default(0);
+            $table->string('direccion_envio')->nullable();
 
-            // Estado de la venta 
+            // Estado de la venta
             $table->enum('estado', ['pendiente', 'pagada', 'cancelada'])->default('pendiente');
 
-            // Total final
+            // Total final (subtotal - descuento + envío)
             $table->decimal('total', 10, 2)->default(0);
 
             $table->timestamps();
