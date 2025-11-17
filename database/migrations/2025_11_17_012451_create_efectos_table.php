@@ -19,7 +19,7 @@ return new class extends Migration
             // ENUM con los 3 valores permitidos
             $table->enum('tipo', ['positivo', 'negativo', 'neutral'])
                   ->default('positivo');
-
+            $table->string('imagen')->nullable();
             $table->boolean('activo')->default(true);
 
             $table->timestamps(); // created_at y updated_at

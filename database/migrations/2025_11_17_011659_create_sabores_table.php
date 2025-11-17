@@ -17,6 +17,7 @@ return new class extends Migration
             $table->text('descripcion')->nullable();
             $table->tinyInteger('intensidad')->default(1);
             $table->boolean('activo')->default(true);
+            $table->string('imagen')->nullable();
             $table->timestamps();
         });
     }
