@@ -20,6 +20,7 @@
                     <li class="nav-item"><a class="nav-link" href="{{ route('efectos.index') }}">Efectos</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('colores.index') }}">Colores</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('sabores.index') }}">Sabores</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('pivotes.index') }}">Pivotes</a></li>
                 </ul>
             </div>
         </div>
