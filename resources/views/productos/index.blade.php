@@ -22,6 +22,9 @@
                 <th>Imagen</th>
                 <th>Nombre</th>
                 <th>Categoría</th>
+                <th>Sabores</th>
+                <th>Colores</th>
+                <th>Efectos</th>
                 <th>Descripción</th>
                 <th>Precio</th>
                 <th>Stock</th>
@@ -48,6 +51,34 @@
 
                     <td>{{ $producto->nombre }}</td>
                     <td>{{ $producto->categoria ? $producto->categoria->nombre : 'Sin categoría' }}</td>
+
+                    {{-- SABORES --}}
+                    <td>
+                        @forelse($producto->sabores as $sabor)
+                            <span class="badge bg-primary">{{ $sabor->nombre }}</span>
+                        @empty
+                            <span class="text-muted">—</span>
+                        @endforelse
+                    </td>
+
+                    {{-- COLORES --}}
+                    <td>
+                        @forelse($producto->colores as $color)
+                            <span class="badge bg-success">{{ $color->nombre }}</span>
+                        @empty
+                            <span class="text-muted">—</span>
+                        @endforelse
+                    </td>
+
+                    {{-- EFECTOS --}}
+                    <td>
+                        @forelse($producto->efectos as $efecto)
+                            <span class="badge bg-warning text-dark">{{ $efecto->nombre }}</span>
+                        @empty
+                            <span class="text-muted">—</span>
+                        @endforelse
+                    </td>
+
                     <td>{{ Str::limit($producto->descripcion, 40, '...') }}</td>
                     <td>${{ number_format($producto->precio, 0, ',', '.') }}</td>
                     <td>{{ $producto->stock }}</td>
@@ -74,10 +105,11 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="9" class="text-center text-muted">No hay productos registrados</td>
+                    <td colspan="12" class="text-center text-muted">No hay productos registrados</td>
                 </tr>
             @endforelse
         </tbody>
     </table>
 </div>
 @endsection
+

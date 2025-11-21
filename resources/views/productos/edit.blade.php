@@ -83,6 +83,217 @@
             </select>
         </div>
 
+                {{-- SABORES --}}
+        <div class="mb-3">
+            <label class="form-label">Sabores</label>
+
+            <div id="sabores-container">
+
+                {{-- Mostrar sabores ya asociados --}}
+                @foreach(old('sabores', $producto->sabores->pluck('id')->toArray()) as $saborSeleccionado)
+                    <div class="d-flex gap-2 mb-2">
+                        <select name="sabores[]" class="form-select">
+                            @foreach($sabores as $sabor)
+                                <option value="{{ $sabor->id }}"
+                                    {{ $sabor->id == $saborSeleccionado ? 'selected' : '' }}>
+                                    {{ $sabor->nombre }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <button type="button" class="btn btn-danger remove-sabor">X</button>
+                    </div>
+                @endforeach
+
+                {{-- Si no tiene ninguno, mostrar al menos uno vacío --}}
+                @if($producto->sabores->count() == 0)
+                    <div class="d-flex gap-2 mb-2">
+                        <select name="sabores[]" class="form-select">
+                            @foreach($sabores as $sabor)
+                                <option value="{{ $sabor->id }}">{{ $sabor->nombre }}</option>
+                            @endforeach
+                        </select>
+                        <button type="button" class="btn btn-danger remove-sabor">X</button>
+                    </div>
+                @endif
+
+            </div>
+
+            <button type="button" id="add-sabor" class="btn btn-primary btn-sm">
+                Agregar sabor
+            </button>
+        </div>
+
+        <script>
+        document.getElementById('add-sabor').addEventListener('click', function () {
+            let container = document.getElementById('sabores-container');
+
+            let row = document.createElement('div');
+            row.classList.add('d-flex', 'gap-2', 'mb-2');
+
+            row.innerHTML = `
+                <select name="sabores[]" class="form-select">
+                    @foreach($sabores as $sabor)
+                        <option value="{{ $sabor->id }}">{{ $sabor->nombre }}</option>
+                    @endforeach
+                </select>
+                <button type="button" class="btn btn-danger remove-sabor">X</button>
+            `;
+
+            container.appendChild(row);
+
+            row.querySelector('.remove-sabor').addEventListener('click', function () {
+                row.remove();
+            });
+        });
+
+        document.querySelectorAll('.remove-sabor').forEach(btn => {
+            btn.addEventListener('click', function () {
+                this.parentElement.remove();
+            });
+        });
+        </script>
+
+
+
+        {{-- EFECTOS --}}
+        <div class="mb-3">
+            <label class="form-label">Efectos</label>
+
+            <div id="efectos-container">
+
+                @foreach(old('efectos', $producto->efectos->pluck('id')->toArray()) as $efectoSeleccionado)
+                    <div class="d-flex gap-2 mb-2">
+                        <select name="efectos[]" class="form-select">
+                            @foreach($efectos as $efecto)
+                                <option value="{{ $efecto->id }}"
+                                    {{ $efecto->id == $efectoSeleccionado ? 'selected' : '' }}>
+                                    {{ $efecto->nombre }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <button type="button" class="btn btn-danger remove-efecto">X</button>
+                    </div>
+                @endforeach
+
+                @if($producto->efectos->count() == 0)
+                    <div class="d-flex gap-2 mb-2">
+                        <select name="efectos[]" class="form-select">
+                            @foreach($efectos as $efecto)
+                                <option value="{{ $efecto->id }}">{{ $efecto->nombre }}</option>
+                            @endforeach
+                        </select>
+                        <button type="button" class="btn btn-danger remove-efecto">X</button>
+                    </div>
+                @endif
+
+            </div>
+
+            <button type="button" id="add-efecto" class="btn btn-primary btn-sm">
+                Agregar efecto
+            </button>
+        </div>
+
+        <script>
+        document.getElementById('add-efecto').addEventListener('click', function () {
+            let container = document.getElementById('efectos-container');
+
+            let row = document.createElement('div');
+            row.classList.add('d-flex', 'gap-2', 'mb-2');
+
+            row.innerHTML = `
+                <select name="efectos[]" class="form-select">
+                    @foreach($efectos as $efecto)
+                        <option value="{{ $efecto->id }}">{{ $efecto->nombre }}</option>
+                    @endforeach
+                </select>
+                <button type="button" class="btn btn-danger remove-efecto">X</button>
+            `;
+
+            container.appendChild(row);
+
+            row.querySelector('.remove-efecto').addEventListener('click', function () {
+                row.remove();
+            });
+        });
+
+        document.querySelectorAll('.remove-efecto').forEach(btn => {
+            btn.addEventListener('click', function () {
+                this.parentElement.remove();
+            });
+        });
+        </script>
+
+
+
+        {{-- COLORES --}}
+        <div class="mb-3">
+            <label class="form-label">Colores</label>
+
+            <div id="colores-container">
+
+                @foreach(old('colores', $producto->colores->pluck('id')->toArray()) as $colorSeleccionado)
+                    <div class="d-flex gap-2 mb-2">
+                        <select name="colores[]" class="form-select">
+                            @foreach($colores as $color)
+                                <option value="{{ $color->id }}"
+                                    {{ $color->id == $colorSeleccionado ? 'selected' : '' }}>
+                                    {{ $color->nombre }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <button type="button" class="btn btn-danger remove-color">X</button>
+                    </div>
+                @endforeach
+
+                @if($producto->colores->count() == 0)
+                    <div class="d-flex gap-2 mb-2">
+                        <select name="colores[]" class="form-select">
+                            @foreach($colores as $color)
+                                <option value="{{ $color->id }}">{{ $color->nombre }}</option>
+                            @endforeach
+                        </select>
+                        <button type="button" class="btn btn-danger remove-color">X</button>
+                    </div>
+                @endif
+
+            </div>
+
+            <button type="button" id="add-color" class="btn btn-primary btn-sm">
+                Agregar color
+            </button>
+        </div>
+
+        <script>
+        document.getElementById('add-color').addEventListener('click', function () {
+            let container = document.getElementById('colores-container');
+
+            let row = document.createElement('div');
+            row.classList.add('d-flex', 'gap-2', 'mb-2');
+
+            row.innerHTML = `
+                <select name="colores[]" class="form-select">
+                    @foreach($colores as $color)
+                        <option value="{{ $color->id }}">{{ $color->nombre }}</option>
+                    @endforeach
+                </select>
+                <button type="button" class="btn btn-danger remove-color">X</button>
+            `;
+
+            container.appendChild(row);
+
+            row.querySelector('.remove-color').addEventListener('click', function () {
+                row.remove();
+            });
+        });
+
+        document.querySelectorAll('.remove-color').forEach(btn => {
+            btn.addEventListener('click', function () {
+                this.parentElement.remove();
+            });
+        });
+        </script>
+
+
         {{-- Botones --}}
         <div class="d-flex gap-2">
             <button type="submit" class="btn btn-success px-4">Actualizar</button>
