@@ -6,6 +6,10 @@ use App\Http\Controllers\VentaController;
 use App\Http\Controllers\DetalleVentaController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\CategoriaController;
+use App\Http\Controllers\ColorController;
+use App\Http\Controllers\EfectoController;
+use App\Http\Controllers\SaborController;
+
 
 Route::get('/', function () {
     return view('welcome');
@@ -16,4 +20,7 @@ Route::resource('productos', ProductoController::class);
 Route::resource('detalle_ventas', DetalleVentaController::class);
 Route::resource('clientes', ClienteController::class);
 Route::resource('categorias', CategoriaController::class);
+Route::resource('Efectos', EfectoController::class);
+Route::resource('Colores', ColorController::class);
+Route::resource('Sabores', SaborController::class);
 
