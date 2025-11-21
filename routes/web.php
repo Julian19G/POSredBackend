@@ -20,7 +20,11 @@ Route::resource('productos', ProductoController::class);
 Route::resource('detalle_ventas', DetalleVentaController::class);
 Route::resource('clientes', ClienteController::class);
 Route::resource('categorias', CategoriaController::class);
-Route::resource('Efectos', EfectoController::class);
-Route::resource('Colores', ColorController::class);
-Route::resource('Sabores', SaborController::class);
+Route::resource('efectos', EfectoController::class);
+Route::resource('colores', ColorController::class)->parameters([
+    'colores' => 'color'
+]);
 
+Route::resource('sabores', SaborController::class)->parameters([
+    'sabores' => 'sabor'
+]);

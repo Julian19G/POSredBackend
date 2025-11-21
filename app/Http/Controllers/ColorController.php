@@ -33,7 +33,7 @@ class ColorController extends Controller
             'nombre' => 'required|max:100|unique:colores,nombre',
             'codigo_hex' => 'nullable|regex:/^#([A-Fa-f0-9]{6})$/',
             'descripcion' => 'nullable|string',
-            'activo' => 'boolean'
+            'activo' => 'required|in:0,1'
         ]);
 
         Color::create($validated);

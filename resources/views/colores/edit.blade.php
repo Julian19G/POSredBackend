@@ -7,7 +7,8 @@
 
     <h1 class="mb-4">Editar color</h1>
 
-    <form action="{{ route('colores.update', $color->id) }}" method="POST">
+   <form action="{{ route('colores.update', $color->id) }}" method="POST">
+
         @csrf
         @method('PUT')
 
@@ -61,16 +62,17 @@
             @enderror
         </div>
 
-        {{-- Activo --}}
-        <div class="form-check mb-3">
-            <input 
-                type="checkbox" 
-                name="activo" 
-                id="activo" 
-                class="form-check-input"
-                {{ $color->activo ? 'checked' : '' }}>
-            <label for="activo" class="form-check-label">Activo</label>
-        </div>
+            <div class="mb-3">
+                <label class="form-label">Estado</label>
+                <select name="activo" class="form-select @error('activo') is-invalid @enderror">
+                    <option value="1" {{ old('activo', 1) == 1 ? 'selected' : '' }}>Activo</option>
+                    <option value="0" {{ old('activo') == 0 ? 'selected' : '' }}>Inactivo</option>
+                </select>
+
+                @error('activo')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
 
         <button class="btn btn-primary">Actualizar</button>
         <a href="{{ route('colores.index') }}" class="btn btn-secondary">Cancelar</a>

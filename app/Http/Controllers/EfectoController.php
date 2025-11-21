@@ -28,25 +28,27 @@ class EfectoController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'nombre' => 'required|max:100|unique:efectos,nombre',
-            'descripcion' => 'nullable|string',
-            'tipo' => 'required|in:positivo,negativo,neutral',
-            'activo' => 'boolean',
-            'imagen' => 'nullable|image|max:2048',
-        ]);
+        public function store(Request $request)
+        {
+            $validated = $request->validate([
+                'nombre' => 'required|max:100|unique:efectos,nombre',
+                'descripcion' => 'nullable|string',
+                'tipo' => 'required|in:positivo,negativo,neutral',
+                'activo' => 'nullable|boolean',
+                'imagen' => 'nullable|image|max:2048',
+            ]);
 
-        // Manejar imagen si se envía
-        if ($request->hasFile('imagen')) {
-            $validated['imagen'] = $request->file('imagen')->store('efectos', 'public');
+            // Resolver el problema del checkbox
+            $validated['activo'] = $request->has('activo');
+
+            if ($request->hasFile('imagen')) {
+                $validated['imagen'] = $request->file('imagen')->store('efectos', 'public');
+            }
+
+            Efecto::create($validated);
+
+            return redirect()->route('efectos.index')->with('success', 'Efecto creado correctamente.');
         }
-
-        Efecto::create($validated);
-
-        return redirect()->route('efectos.index')->with('success', 'Efecto creado correctamente.');
-    }
 
     /**
      * Display the specified resource.

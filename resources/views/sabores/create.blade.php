@@ -50,15 +50,19 @@
             @enderror
         </div>
 
-        {{-- Activo --}}
-        <div class="mb-3 form-check">
-            <input class="form-check-input"
-                   type="checkbox"
-                   id="activo"
-                   name="activo"
-                   checked>
-            <label class="form-check-label" for="activo">Activo</label>
-        </div>
+
+            {{-- Estado --}}
+            <div class="mb-3">
+                <label class="form-label">Estado</label>
+                <select name="activo" class="form-select @error('activo') is-invalid @enderror">
+                    <option value="1" {{ old('activo', 1) == 1 ? 'selected' : '' }}>Activo</option>
+                    <option value="0" {{ old('activo') == 0 ? 'selected' : '' }}>Inactivo</option>
+                </select>
+
+                @error('activo')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
 
         {{-- Imagen --}}
         <div class="mb-3">
