@@ -37,6 +37,8 @@ class Color extends Model
                     ->withTimestamps();
     }
 
+    
+
     /**
      * Scope: solo colores activos
      */
