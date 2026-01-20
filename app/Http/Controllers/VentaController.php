@@ -71,7 +71,7 @@ class VentaController extends Controller
                 'envio' => $request->boolean('envio', false),
                 'costo_envio' => $request->costo_envio ?? 0,
                 'direccion_envio' => $request->direccion_envio,
-                'estado' => 'pendiente',
+                'estado' => $request->estado,
             ]);
 
             // Registrar detalles
