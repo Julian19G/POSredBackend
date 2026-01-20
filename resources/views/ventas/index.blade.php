@@ -6,29 +6,25 @@
 
     {{-- Mensaje de éxito --}}
     @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <div class="alert alert-success alert-dismissible fade show">
             {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     @endif
 
     {{-- Mensaje de error --}}
     @if($errors->any())
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <div class="alert alert-danger alert-dismissible fade show">
             {{ $errors->first() }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     @endif
 
-    {{-- Botón Nueva Venta --}}
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <a href="{{ route('ventas.create') }}" class="btn btn-primary">
-            ➕ Nueva Venta
-        </a>
+        <a href="{{ route('ventas.create') }}" class="btn btn-primary">➕ Nueva Venta</a>
         <span class="text-muted">Total de ventas: {{ $ventas->count() }}</span>
     </div>
 
-    {{-- Tabla de ventas --}}
     <div class="table-responsive">
         <table class="table table-hover table-bordered align-middle">
             <thead class="table-dark text-center">
@@ -44,86 +40,86 @@
                     <th>Acciones</th>
                 </tr>
             </thead>
+
             <tbody>
-                @forelse($ventas as $venta)
-                    <tr class="text-center">
-                        <td>#{{ $venta->id }}</td>
+            @forelse($ventas as $venta)
+                <tr class="text-center">
+                    <td>#{{ $venta->id }}</td>
 
-                        {{-- Cliente --}}
-                        <td>{{ $venta->cliente->nombre ?? '—' }}</td>
+                    <td>{{ $venta->cliente->nombre ?? '—' }}</td>
 
-                        {{-- Subtotal --}}
-                        <td>${{ number_format($venta->subtotal, 2, ',', '.') }}</td>
+                    <td>${{ number_format($venta->subtotal, 2, ',', '.') }}</td>
 
-                        {{-- Descuento --}}
-                        <td>
-                            @if($venta->descuento_manual > 0)
-                                <span class="text-danger">
-                                    -${{ number_format($venta->descuento_manual, 2, ',', '.') }}
-                                </span>
-                                @if($venta->motivo_descuento)
-                                    <br><small>({{ $venta->motivo_descuento }})</small>
-                                @endif
-                            @else
-                                <span class="text-muted">—</span>
+                    <td>
+                        @if($venta->descuento_manual > 0)
+                            <span class="text-danger">
+                                -${{ number_format($venta->descuento_manual, 2, ',', '.') }}
+                            </span>
+                            @if($venta->motivo_descuento)
+                                <br><small>({{ $venta->motivo_descuento }})</small>
                             @endif
-                        </td>
-                                                {{-- Total --}}
-                        <td><strong>${{ number_format($venta->total, 2, ',', '.') }}</strong></td>
+                        @else
+                            <span class="text-muted">—</span>
+                        @endif
+                    </td>
 
+                    <td>
+                        <strong>${{ number_format($venta->total, 2, ',', '.') }}</strong>
+                    </td>
+                    {{-- ENVÍO --}}
+                    <td>
+                        @if($venta->costo_envio > 0)
+                            <span class="badge bg-primary">Envío</span><br>
+                            ${{ number_format($venta->costo_envio, 2, ',', '.') }}
 
-                        {{-- Envío --}}
-                        <td>
-                            @if($venta->costo_envio > 0)
-                                ${{ number_format($venta->costo_envio, 2, ',', '.') }}
-                                @if($venta->direccion_envio)
-                                    <br><small>{{ $venta->direccion_envio }}</small>
-                                @endif
-                            @else
-                                <span class="text-muted">No aplica</span>
+                            @if($venta->direccion_envio)
+                                <br><small>{{ $venta->direccion_envio }}</small>
                             @endif
-                        </td>
-                        {{-- Estado --}}
-                        <td>
-                            @switch($venta->estado)
-                                @case('pagada')
-                                    <span class="badge bg-success">Pagada</span>
-                                    @break
-                                @case('pendiente')
-                                    <span class="badge bg-warning text-dark">Pendiente</span>
-                                    @break
-                                @case('cancelada')
-                                    <span class="badge bg-danger">Cancelada</span>
-                                    @break
-                                @default
-                                    <span class="badge bg-secondary">Desconocido</span>
-                            @endswitch
-                        </td>
+                        @else
+                            <span class="badge bg-secondary">No aplica</span>
+                        @endif
+                    </td>
 
-                        {{-- Fecha --}}
-                        <td>{{ $venta->created_at?->format('d/m/Y H:i') ?? '—' }}</td>
 
-                        {{-- Acciones --}}
-                        <td>
-                            <a href="{{ route('ventas.show', $venta->id) }}" class="btn btn-sm btn-info">👁 Ver</a>
-                            <a href="{{ route('ventas.edit', $venta->id) }}" class="btn btn-sm btn-warning">✏️ Editar</a>
-                            <form action="{{ route('ventas.destroy', $venta->id) }}" method="POST" class="d-inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-danger"
-                                    onclick="return confirm('¿Seguro que deseas eliminar esta venta?')">
-                                    🗑 Eliminar
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="9" class="text-center text-muted py-3">
-                            No hay ventas registradas.
-                        </td>
-                    </tr>
-                @endforelse
+                    <td>
+                        @switch($venta->estado)
+                            @case('pagada')
+                                <span class="badge bg-success">Pagada</span>
+                                @break
+                            @case('pendiente')
+                                <span class="badge bg-warning text-dark">Pendiente</span>
+                                @break
+                            @case('cancelada')
+                                <span class="badge bg-danger">Cancelada</span>
+                                @break
+                            @default
+                                <span class="badge bg-secondary">Desconocido</span>
+                        @endswitch
+                    </td>
+
+                    <td>{{ $venta->created_at?->format('d/m/Y H:i') }}</td>
+
+                    <td>
+                        <a href="{{ route('ventas.show', $venta->id) }}" class="btn btn-sm btn-info">👁 Ver</a>
+                        <a href="{{ route('ventas.edit', $venta->id) }}" class="btn btn-sm btn-warning">✏️ Editar</a>
+
+                        <form action="{{ route('ventas.destroy', $venta->id) }}" method="POST" class="d-inline">
+                            @csrf
+                            @method('DELETE')
+                            <button class="btn btn-sm btn-danger"
+                                onclick="return confirm('¿Eliminar esta venta?')">
+                                🗑
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="9" class="text-center text-muted py-4">
+                        No hay ventas registradas.
+                    </td>
+                </tr>
+            @endforelse
             </tbody>
         </table>
     </div>

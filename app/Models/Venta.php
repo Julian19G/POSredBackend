@@ -66,14 +66,14 @@ class Venta extends Model
     /**
      * Calcula el total final de la venta (subtotal - descuento + envío).
      */
-    public function calcularTotal(): float
-    {
-        $subtotal = $this->subtotal ?? 0;
-        $descuento = $this->descuento_manual ?? 0;
-        $envio = $this->envio ? ($this->costo_envio ?? 0) : 0;
+        public function calcularTotal(): float
+        {
+            $subtotal = $this->subtotal ?? 0;
+            $descuento = $this->descuento_manual ?? 0;
+            $envio = $this->costo_envio ?? 0;
 
-        return max($subtotal - $descuento + $envio, 0);
-    }
+            return max($subtotal - $descuento + $envio, 0);
+        }
 
     /**
      * Evento de modelo: recalcula el total automáticamente al guardar.
