@@ -55,7 +55,7 @@
                         <td><strong>${{ number_format($detalle->subtotal, 2) }}</strong></td>
                         <td>{{ $detalle->created_at->format('d/m/Y') }}</td>
                         <td>
-                            <div class="btn-group" role="group">
+                           <div class="d-flex gap-1 justify-content-center">
                                 <a href="{{ route('detalle_ventas.show', $detalle->id) }}" class="btn btn-sm btn-outline-info">👁 Ver</a>
                                 <a href="{{ route('detalle_ventas.edit', $detalle->id) }}" class="btn btn-sm btn-outline-warning">✏️ Editar</a>
                                 <form action="{{ route('detalle_ventas.destroy', $detalle->id) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Seguro que deseas eliminar este registro?');">
@@ -74,10 +74,17 @@
             </tbody>
         </table>
     </div>
+{{-- Paginación --}}
+<div class="mt-3 text-center">
 
-    {{-- Paginación --}}
-    <div class="d-flex justify-content-center mt-3">
+    <small class="text-muted d-block mb-2">
+        Mostrando {{ $detalleVentas->firstItem() }} a {{ $detalleVentas->lastItem() }}
+        de {{ $detalleVentas->total() }} resultados
+    </small>
+
+    <div class="d-flex justify-content-center">
         {{ $detalleVentas->links() }}
     </div>
+
 </div>
 @endsection
