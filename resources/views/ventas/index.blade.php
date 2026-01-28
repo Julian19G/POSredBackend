@@ -22,7 +22,9 @@
 
     <div class="d-flex justify-content-between align-items-center mb-3">
         <a href="{{ route('ventas.create') }}" class="btn btn-primary">➕ Nueva Venta</a>
-        <span class="text-muted">Total de ventas: {{ $ventas->count() }}</span>
+        <span class="text-muted">
+            Total de ventas: {{ $ventas->total() }}
+        </span>
     </div>
 
     <div class="table-responsive">
@@ -45,7 +47,6 @@
             @forelse($ventas as $venta)
                 <tr class="text-center">
                     <td>#{{ $venta->id }}</td>
-
                     <td>{{ $venta->cliente->nombre ?? '—' }}</td>
 
                     <td>${{ number_format($venta->subtotal, 2, ',', '.') }}</td>
@@ -66,12 +67,12 @@
                     <td>
                         <strong>${{ number_format($venta->total, 2, ',', '.') }}</strong>
                     </td>
+
                     {{-- ENVÍO --}}
                     <td>
                         @if($venta->costo_envio > 0)
                             <span class="badge bg-primary">Envío</span><br>
                             ${{ number_format($venta->costo_envio, 2, ',', '.') }}
-
                             @if($venta->direccion_envio)
                                 <br><small>{{ $venta->direccion_envio }}</small>
                             @endif
@@ -79,7 +80,6 @@
                             <span class="badge bg-secondary">No aplica</span>
                         @endif
                     </td>
-
 
                     <td>
                         @switch($venta->estado)
@@ -123,5 +123,19 @@
             </tbody>
         </table>
     </div>
+
+    {{-- PAGINACIÓN --}}
+    @if($ventas->hasPages())
+        <div class="mt-4">
+            <div class="d-flex justify-content-center">
+                {{ $ventas->links() }}
+            </div>
+
+            <small class="text-muted d-block text-center mt-2">
+                Mostrando {{ $ventas->firstItem() }} a {{ $ventas->lastItem() }}
+                de {{ $ventas->total() }} ventas
+            </small>
+        </div>
+    @endif
 </div>
 @endsection

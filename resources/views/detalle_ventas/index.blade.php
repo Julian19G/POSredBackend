@@ -31,7 +31,6 @@
                     <th>ID</th>
                     <th>Venta</th>
                     <th>Producto</th>
-                    <th>Código</th>
                     <th>Cantidad</th>
                     <th>Precio Unitario</th>
                     <th>Descuento</th>
@@ -47,7 +46,6 @@
                         <td>{{ $detalle->id }}</td>
                         <td>#{{ $detalle->venta_id }}</td>
                         <td>{{ $detalle->nombre_producto }}</td>
-                        <td>{{ $detalle->codigo_producto ?? '—' }}</td>
                         <td>{{ $detalle->cantidad }}</td>
                         <td>${{ number_format($detalle->precio_unitario, 2) }}</td>
                         <td>${{ number_format($detalle->descuento_aplicado, 2) }}</td>
@@ -77,14 +75,16 @@
 {{-- Paginación --}}
 <div class="mt-3 text-center">
 
-    <small class="text-muted d-block mb-2">
-        Mostrando {{ $detalleVentas->firstItem() }} a {{ $detalleVentas->lastItem() }}
-        de {{ $detalleVentas->total() }} resultados
-    </small>
+
 
     <div class="d-flex justify-content-center">
         {{ $detalleVentas->links() }}
     </div>
 
+        <small class="text-muted d-block mb-2">
+        Mostrando {{ $detalleVentas->firstItem() }} a {{ $detalleVentas->lastItem() }}
+        de {{ $detalleVentas->total() }} resultados
+    </small>
+    
 </div>
 @endsection

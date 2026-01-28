@@ -14,14 +14,15 @@ class VentaController extends Controller
     /**
      * Muestra todas las ventas.
      */
-    public function index()
-    {
-        $ventas = Venta::with(['cliente', 'detalles.producto'])
-            ->latest()
-            ->get();
+        public function index()
+        {
+            $ventas = Venta::with(['cliente', 'detalles.producto'])
+                ->latest()
+                ->paginate(10); // Resultados de la tabla 
 
-        return view('ventas.index', compact('ventas'));
-    }
+            return view('ventas.index', compact('ventas'));
+        }
+
 
     /**
      * Muestra el formulario de creación de una venta.
@@ -80,13 +81,21 @@ class VentaController extends Controller
                 $cantidad = $request->cantidades[$i];
                 $subtotalDetalle = $producto->precio * $cantidad;
 
-                DetalleVenta::create([
-                    'venta_id' => $venta->id,
-                    'producto_id' => $producto_id,
-                    'cantidad' => $cantidad,
-                    'precio_unitario' => $producto->precio,
-                    'subtotal' => $subtotalDetalle,
-                ]);
+            DetalleVenta::create([
+                'venta_id' => $venta->id,
+                'producto_id' => $producto_id,
+
+                // 🔥 CAMPOS HISTÓRICOS OBLIGATORIOS
+                'nombre_producto' => $producto->nombre,
+                'codigo_producto' => $producto->codigo ?? null,
+
+                'cantidad' => $cantidad,
+                'precio_unitario' => $producto->precio,
+                'descuento_aplicado' => 0,
+                'impuesto' => 0,
+                'subtotal' => $subtotalDetalle,
+            ]);
+
 
                 // Actualizar stock
                 $producto->decrement('stock', $cantidad);
@@ -178,13 +187,20 @@ class VentaController extends Controller
                 $cantidad = $request->cantidades[$i];
                 $subtotalDetalle = $producto->precio * $cantidad;
 
-                DetalleVenta::create([
-                    'venta_id' => $venta->id,
-                    'producto_id' => $producto_id,
-                    'cantidad' => $cantidad,
-                    'precio_unitario' => $producto->precio,
-                    'subtotal' => $subtotalDetalle,
-                ]);
+            DetalleVenta::create([
+                'venta_id' => $venta->id,
+                'producto_id' => $producto_id,
+
+                'nombre_producto' => $producto->nombre,
+                'codigo_producto' => $producto->codigo ?? null,
+
+                'cantidad' => $cantidad,
+                'precio_unitario' => $producto->precio,
+                'descuento_aplicado' => 0,
+                'impuesto' => 0,
+                'subtotal' => $subtotalDetalle,
+            ]);
+
 
                 $producto->decrement('stock', $cantidad);
             }
