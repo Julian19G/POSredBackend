@@ -2,7 +2,6 @@
 
 @section('content')
 <div class="container">
-    <h1 class="mb-4">📦 Listado de Ventas</h1>
 
     {{-- Mensaje de éxito --}}
     @if(session('success'))
@@ -20,12 +19,20 @@
         </div>
     @endif
 
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <a href="{{ route('ventas.create') }}" class="btn btn-primary">➕ Nueva Venta</a>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">📦 Listado de Ventas</h1>
+
+    <div class="d-flex align-items-center gap-3">
+                <a href="{{ route('ventas.create') }}" class="btn btn-primary">
+            ➕ Nueva Venta
+        </a>
         <span class="text-muted">
             Total de ventas: {{ $ventas->total() }}
         </span>
+
+
     </div>
+</div>
 
     <div class="table-responsive">
         <table class="table table-hover table-bordered align-middle">
