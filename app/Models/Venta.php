@@ -21,12 +21,11 @@ class Venta extends Model
         'descuento_manual',
         'motivo_descuento',
         'descuento_id',
-        'envio',
-        'costo_envio',
-        'direccion_envio',
+        'envio',        // solo boolean
         'estado',
         'total',
     ];
+
 
     /**
      * Casting de tipos de datos.
@@ -66,14 +65,16 @@ class Venta extends Model
     /**
      * Calcula el total final de la venta (subtotal - descuento + envío).
      */
-        public function calcularTotal(): float
-        {
-            $subtotal = $this->subtotal ?? 0;
-            $descuento = $this->descuento_manual ?? 0;
-            $envio = $this->costo_envio ?? 0;
+    public function calcularTotal(): float
+    {
+        $subtotal = $this->subtotal ?? 0;
+        $descuento = $this->descuento_manual ?? 0;
 
-            return max($subtotal - $descuento + $envio, 0);
-        }
+        $costoEnvio = $this->domicilio?->costo_envio ?? 0;
+
+        return max($subtotal - $descuento + $costoEnvio, 0);
+    }
+
 
     /**
      * Evento de modelo: recalcula el total automáticamente al guardar.
@@ -94,4 +95,11 @@ class Venta extends Model
     {
         return ucfirst($this->estado);
     }
+
+        public function domicilio()
+    {
+        return $this->hasOne(Domicilio::class);
+    }
+
 }
+

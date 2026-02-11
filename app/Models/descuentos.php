@@ -8,27 +8,30 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Descuento extends Model
 {
     use HasFactory;
-
     protected $fillable = [
         'nombre',
         'codigo',
-        'tipo', // porcentaje o fijo
+        'tipo',
         'valor',
         'fecha_inicio',
         'fecha_fin',
         'activo',
+        'aplicable_manual', 
         'uso_maximo',
         'uso_cliente_maximo',
     ];
 
+
     protected $casts = [
         'activo' => 'boolean',
+        'aplicable_manual' => 'boolean', 
         'valor' => 'float',
         'fecha_inicio' => 'datetime',
         'fecha_fin' => 'datetime',
         'uso_maximo' => 'integer',
         'uso_cliente_maximo' => 'integer',
     ];
+
 
     /**
      * Relación con ventas

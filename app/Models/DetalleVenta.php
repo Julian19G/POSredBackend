@@ -112,3 +112,4 @@ class DetalleVenta extends Model
         return "{$this->nombre_producto} ({$this->cantidad} × {$this->getPrecioUnitarioFormattedAttribute()}) = {$this->getSubtotalFormattedAttribute()}";
     }
 }
+

@@ -6,217 +6,140 @@ use App\Models\Venta;
 use App\Models\DetalleVenta;
 use App\Models\Producto;
 use App\Models\Cliente;
+use App\Models\Descuento;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class VentaController extends Controller
 {
-    /**
-     * Muestra todas las ventas.
-     */
-        public function index()
-        {
-            $ventas = Venta::with(['cliente', 'detalles.producto'])
-                ->latest()
-                ->paginate(10); // Resultados de la tabla 
-
-            return view('ventas.index', compact('ventas'));
-        }
-
-
-    /**
-     * Muestra el formulario de creación de una venta.
-     */
-    public function create()
+    /* =========================
+     * LISTADO
+     * ========================= */
+    public function index()
     {
-        $productos = Producto::where('stock', '>', 0)->get();
-        $clientes = Cliente::all();
-        return view('ventas.create', compact('productos', 'clientes'));
+        $ventas = Venta::with(['cliente', 'detalles.producto'])
+            ->latest()
+            ->paginate(10);
+
+        return view('ventas.index', compact('ventas'));
     }
 
-    /**
-     * Guarda una nueva venta.
-     */
+    /* =========================
+     * FORM CREAR
+     * ========================= */
+    public function create()
+    {
+        return view('ventas.create', [
+            'productos' => Producto::where('stock', '>', 0)->get(),
+            'clientes'  => Cliente::all(),
+        ]);
+    }
+
+    /* =========================
+     * GUARDAR
+     * ========================= */
     public function store(Request $request)
     {
-        $request->validate([
-            'cliente_id' => 'required|exists:clientes,id',
-            'productos' => 'required|array|min:1',
-            'productos.*' => 'exists:productos,id',
-            'cantidades' => 'required|array|min:1',
-            'cantidades.*' => 'integer|min:1',
-            'descuento_manual' => 'nullable|numeric|min:0',
-            'motivo_descuento' => 'nullable|string|max:255',
-            'envio' => 'boolean',
-            'costo_envio' => 'nullable|numeric|min:0',
-            'direccion_envio' => 'nullable|string|max:255',
-        ]);
+        $this->validarVenta($request);
+
+        // 🔥 Resolver descuentos (regla de negocio)
+        $descuento = $this->resolverDescuento($request);
 
         DB::beginTransaction();
         try {
-            $subtotal = 0;
+            $subtotal = $this->calcularSubtotal($request);
 
-            // Calcular subtotal
-            foreach ($request->productos as $i => $producto_id) {
-                $producto = Producto::findOrFail($producto_id);
-                $cantidad = $request->cantidades[$i];
-                $subtotal += $producto->precio * $cantidad;
-            }
-
-            // Crear venta principal
             $venta = Venta::create([
-                'cliente_id' => $request->cliente_id,
-                'subtotal' => $subtotal,
+                'cliente_id'       => $request->cliente_id,
+                'subtotal'         => $subtotal,
+                'descuento_id'     => $descuento?->id,
                 'descuento_manual' => $request->descuento_manual ?? 0,
                 'motivo_descuento' => $request->motivo_descuento,
-                'envio' => $request->boolean('envio', false),
-                'costo_envio' => $request->costo_envio ?? 0,
-                'direccion_envio' => $request->direccion_envio,
-                'estado' => $request->estado,
+                'envio'            => $request->boolean('envio'),
+                'estado'           => 'pendiente',
             ]);
 
-            // Registrar detalles
-            foreach ($request->productos as $i => $producto_id) {
-                $producto = Producto::findOrFail($producto_id);
-                $cantidad = $request->cantidades[$i];
-                $subtotalDetalle = $producto->precio * $cantidad;
-
-            DetalleVenta::create([
-                'venta_id' => $venta->id,
-                'producto_id' => $producto_id,
-
-                // 🔥 CAMPOS HISTÓRICOS OBLIGATORIOS
-                'nombre_producto' => $producto->nombre,
-                'codigo_producto' => $producto->codigo ?? null,
-
-                'cantidad' => $cantidad,
-                'precio_unitario' => $producto->precio,
-                'descuento_aplicado' => 0,
-                'impuesto' => 0,
-                'subtotal' => $subtotalDetalle,
-            ]);
-
-
-                // Actualizar stock
-                $producto->decrement('stock', $cantidad);
-            }
+            $this->registrarDetalles($venta, $request);
 
             DB::commit();
-            return redirect()->route('ventas.index')->with('success', 'Venta registrada con éxito.');
+            return redirect()->route('ventas.index')
+                ->with('success', 'Venta registrada con éxito.');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'Error al registrar la venta: ' . $e->getMessage()]);
+            return back()->withErrors(['error' => $e->getMessage()]);
         }
     }
 
-    /**
-     * Muestra una venta específica.
-     */
+    /* =========================
+     * VER
+     * ========================= */
     public function show($id)
     {
         $venta = Venta::with(['cliente', 'detalles.producto'])->findOrFail($id);
         return view('ventas.show', compact('venta'));
     }
 
-    /**
-     * Muestra el formulario para editar una venta.
-     */
+    /* =========================
+     * FORM EDITAR
+     * ========================= */
     public function edit($id)
     {
-        $venta = Venta::with('detalles.producto')->findOrFail($id);
-        $productos = Producto::all();
-        $clientes = Cliente::all();
-        return view('ventas.edit', compact('venta', 'productos', 'clientes'));
+        return view('ventas.edit', [
+            'venta'     => Venta::with('detalles.producto')->findOrFail($id),
+            'productos' => Producto::all(),
+            'clientes'  => Cliente::all(),
+        ]);
     }
 
-    /**
-     * Actualiza una venta existente.
-     */
+    /* =========================
+     * ACTUALIZAR
+     * ========================= */
     public function update(Request $request, $id)
     {
         $venta = Venta::findOrFail($id);
+        $this->validarVenta($request);
 
-        $request->validate([
-            'cliente_id' => 'required|exists:clientes,id',
-            'productos' => 'required|array|min:1',
-            'productos.*' => 'exists:productos,id',
-            'cantidades' => 'required|array|min:1',
-            'cantidades.*' => 'integer|min:1',
-            'descuento_manual' => 'nullable|numeric|min:0',
-            'motivo_descuento' => 'nullable|string|max:255',
-            'envio' => 'boolean',
-            'costo_envio' => 'nullable|numeric|min:0',
-            'direccion_envio' => 'nullable|string|max:255',
-            'estado' => 'in:pendiente,pagada,cancelada',
-        ]);
+        // 🔥 Resolver descuentos
+        $descuento = $this->resolverDescuento($request);
 
         DB::beginTransaction();
         try {
-            // Revertir stock anterior
+            // Revertir stock
             foreach ($venta->detalles as $detalle) {
                 $detalle->producto->increment('stock', $detalle->cantidad);
             }
 
-            // Eliminar detalles antiguos
             $venta->detalles()->delete();
 
-            // Calcular nuevo subtotal
-            $subtotal = 0;
-            foreach ($request->productos as $i => $producto_id) {
-                $producto = Producto::findOrFail($producto_id);
-                $cantidad = $request->cantidades[$i];
-                $subtotal += $producto->precio * $cantidad;
-            }
+            $subtotal = $this->calcularSubtotal($request);
 
-            // Actualizar venta principal
             $venta->update([
-                'cliente_id' => $request->cliente_id,
-                'subtotal' => $subtotal,
+                'cliente_id'       => $request->cliente_id,
+                'subtotal'         => $subtotal,
+                'descuento_id'     => $descuento?->id,
                 'descuento_manual' => $request->descuento_manual ?? 0,
                 'motivo_descuento' => $request->motivo_descuento,
-                'envio' => $request->boolean('envio', false),
-                'costo_envio' => $request->costo_envio ?? 0,
-                'direccion_envio' => $request->direccion_envio,
-                'estado' => $request->estado ?? 'pendiente',
+                'envio'            => $request->boolean('envio'),
+                'estado'           => $request->estado ?? 'pendiente',
             ]);
 
-            // Registrar nuevos detalles
-            foreach ($request->productos as $i => $producto_id) {
-                $producto = Producto::findOrFail($producto_id);
-                $cantidad = $request->cantidades[$i];
-                $subtotalDetalle = $producto->precio * $cantidad;
-
-            DetalleVenta::create([
-                'venta_id' => $venta->id,
-                'producto_id' => $producto_id,
-
-                'nombre_producto' => $producto->nombre,
-                'codigo_producto' => $producto->codigo ?? null,
-
-                'cantidad' => $cantidad,
-                'precio_unitario' => $producto->precio,
-                'descuento_aplicado' => 0,
-                'impuesto' => 0,
-                'subtotal' => $subtotalDetalle,
-            ]);
-
-
-                $producto->decrement('stock', $cantidad);
-            }
+            $this->registrarDetalles($venta, $request);
 
             DB::commit();
-            return redirect()->route('ventas.index')->with('success', 'Venta actualizada correctamente.');
+            return redirect()->route('ventas.index')
+                ->with('success', 'Venta actualizada correctamente.');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'Error al actualizar la venta: ' . $e->getMessage()]);
+            return back()->withErrors(['error' => $e->getMessage()]);
         }
     }
 
-    /**
-     * Elimina una venta.
-     */
+    /* =========================
+     * ELIMINAR
+     * ========================= */
     public function destroy($id)
     {
         $venta = Venta::findOrFail($id);
@@ -231,11 +154,86 @@ class VentaController extends Controller
             $venta->delete();
 
             DB::commit();
-            return redirect()->route('ventas.index')->with('success', 'Venta eliminada correctamente.');
+            return back()->with('success', 'Venta eliminada.');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'Error al eliminar la venta: ' . $e->getMessage()]);
+            return back()->withErrors(['error' => $e->getMessage()]);
+        }
+    }
+
+    /* =========================
+     * MÉTODOS PRIVADOS
+     * ========================= */
+
+    private function validarVenta(Request $request): void
+    {
+        $request->validate([
+            'cliente_id'       => 'required|exists:clientes,id',
+            'productos'        => 'required|array|min:1',
+            'productos.*'      => 'exists:productos,id',
+            'cantidades'       => 'required|array|min:1',
+            'cantidades.*'     => 'integer|min:1',
+            'descuento_id'     => 'nullable|exists:descuentos,id',
+            'descuento_manual' => 'nullable|numeric|min:0',
+            'motivo_descuento' => 'nullable|string|max:255',
+            'envio'            => 'boolean',
+            'estado'           => 'nullable|in:pendiente,pagada,cancelada',
+        ]);
+    }
+
+    private function resolverDescuento(Request $request): ?Descuento
+    {
+        $descuento = null;
+
+        if ($request->filled('descuento_id')) {
+            $descuento = Descuento::activos()->findOrFail($request->descuento_id);
+
+            if ($descuento->aplicable_manual && empty($request->motivo_descuento)) {
+                throw ValidationException::withMessages([
+                    'motivo_descuento' => 'Debes justificar este descuento.',
+                ]);
+            }
+        }
+
+        if (($request->descuento_manual ?? 0) > 0 && empty($request->motivo_descuento)) {
+            throw ValidationException::withMessages([
+                'motivo_descuento' => 'Debes justificar el descuento aplicado.',
+            ]);
+        }
+
+        return $descuento;
+    }
+
+    private function calcularSubtotal(Request $request): float
+    {
+        $subtotal = 0;
+
+        foreach ($request->productos as $i => $producto_id) {
+            $producto = Producto::findOrFail($producto_id);
+            $subtotal += $producto->precio * $request->cantidades[$i];
+        }
+
+        return $subtotal;
+    }
+
+    private function registrarDetalles(Venta $venta, Request $request): void
+    {
+        foreach ($request->productos as $i => $producto_id) {
+            $producto = Producto::findOrFail($producto_id);
+            $cantidad = $request->cantidades[$i];
+
+            DetalleVenta::create([
+                'venta_id'        => $venta->id,
+                'producto_id'     => $producto_id,
+                'nombre_producto' => $producto->nombre,
+                'codigo_producto' => $producto->codigo,
+                'cantidad'        => $cantidad,
+                'precio_unitario' => $producto->precio,
+                'subtotal'        => $producto->precio * $cantidad,
+            ]);
+
+            $producto->decrement('stock', $cantidad);
         }
     }
 }
