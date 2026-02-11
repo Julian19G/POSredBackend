@@ -9,6 +9,7 @@ use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ColorController;
 use App\Http\Controllers\EfectoController;
 use App\Http\Controllers\SaborController;
+use App\Http\Controllers\DescuentoController;
 use Illuminate\Support\Facades\DB;
 
 
@@ -22,6 +23,7 @@ Route::resource('detalle_ventas', DetalleVentaController::class);
 Route::resource('clientes', ClienteController::class);
 Route::resource('categorias', CategoriaController::class);
 Route::resource('efectos', EfectoController::class);
+Route::resource('descuentos', DescuentoController::class); 
 Route::resource('colores', ColorController::class)->parameters([
     'colores' => 'color'
 ]);
