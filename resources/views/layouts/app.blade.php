@@ -88,6 +88,13 @@
                     </a>
                 </li>
 
+                  <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('descuentos.*') ? 'active fw-semibold' : '' }}"
+                       href="{{ route('descuentos.index') }}">
+                        Descuentos
+                    </a>
+                </li>
+
             </ul>
         </div>
     </div>
@@ -95,6 +102,6 @@
 
     <main class="container">
         @yield('content')
-    </main>
+    </main> 
 </body>
 </html>
