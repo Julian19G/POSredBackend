@@ -66,7 +66,7 @@
                                 <th>Producto</th>
                                 <th>Precio Unitario</th>
                                 <th>Cantidad</th>
-                                <th>descuentos</th>
+                                <th>Descuento</th>
                                 <th>Subtotal</th>
                             </tr>
                         </thead>
@@ -77,13 +77,13 @@
                                     <td>$<?php echo e(number_format($detalle->precio_unitario, 2, ',', '.')); ?></td>
                                     <td><?php echo e($detalle->cantidad); ?></td>
                                     <td>
-                                        <?php if($detalle->descuentos_manual > 0): ?>
-                                            <span class="text-danger">-$<?php echo e(number_format($detalle->descuentos_manual, 2, ',', '.')); ?></span>
+                                        <?php if($detalle->descuento_manual > 0): ?>
+                                            <span class="text-danger">-$<?php echo e(number_format($detalle->descuento_manual, 2, ',', '.')); ?></span>
                                         <?php else: ?>
                                             <span class="text-muted">—</span>
                                         <?php endif; ?>
                                     </td>
-                                    <td>$<?php echo e(number_format(($detalle->precio_unitario * $detalle->cantidad) - $detalle->descuentos_manual, 2, ',', '.')); ?></td>
+                                    <td>$<?php echo e(number_format(($detalle->precio_unitario * $detalle->cantidad) - $detalle->descuento_manual, 2, ',', '.')); ?></td>
                                 </tr>
                             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </tbody>
@@ -104,10 +104,10 @@
 
                 </div>
                 <div class="col-md-6 mb-2">
-                    <strong>descuentos total manual:</strong><br>
-                    <?php if($venta->descuentos_manual > 0): ?>
-                        <span class="text-danger">-$<?php echo e(number_format($venta->descuentos_manual, 2, ',', '.')); ?></span>
-                        <small class="text-muted">(<?php echo e($venta->motivo_descuentos ?? 'Sin motivo registrado'); ?>)</small>
+                    <strong>Descuento total manual:</strong><br>
+                    <?php if($venta->descuento_manual > 0): ?>
+                        <span class="text-danger">-$<?php echo e(number_format($venta->descuento_manual, 2, ',', '.')); ?></span>
+                        <small class="text-muted">(<?php echo e($venta->motivo_descuento ?? 'Sin motivo registrado'); ?>)</small>
                     <?php else: ?>
                         <span class="text-muted">—</span>
                     <?php endif; ?>

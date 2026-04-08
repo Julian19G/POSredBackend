@@ -44,7 +44,7 @@
                     <th>ID</th>
                     <th>Cliente</th>
                     <th>Subtotal</th>
-                    <th>descuentos</th>
+                    <th>Descuento</th>
                     <th>Total</th>
                     <th>Envío</th>
                     <th>Estado</th>
@@ -62,13 +62,13 @@
                     <td>$<?php echo e(number_format($venta->subtotal, 2, ',', '.')); ?></td>
 
                     <td>
-                        <?php if($venta->descuentos_manual > 0): ?>
+                        <?php if($venta->descuento_manual > 0): ?>
                             <span class="text-danger">
-                                -$<?php echo e(number_format($venta->descuentos_manual, 2, ',', '.')); ?>
+                                -$<?php echo e(number_format($venta->descuento_manual, 2, ',', '.')); ?>
 
                             </span>
-                            <?php if($venta->motivo_descuentos): ?>
-                                <br><small>(<?php echo e($venta->motivo_descuentos); ?>)</small>
+                            <?php if($venta->motivo_descuento): ?>
+                                <br><small>(<?php echo e($venta->motivo_descuento); ?>)</small>
                             <?php endif; ?>
                         <?php else: ?>
                             <span class="text-muted">—</span>

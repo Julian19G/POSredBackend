@@ -21,6 +21,8 @@ class Venta extends Model
         'descuento_manual',
         'motivo_descuento',
         'descuento_id',
+        'costo_envio',        
+        'direccion_envio',   
         'envio',        // solo boolean
         'estado',
         'total',
@@ -67,10 +69,9 @@ class Venta extends Model
      */
     public function calcularTotal(): float
     {
-        $subtotal = $this->subtotal ?? 0;
-        $descuento = $this->descuento_manual ?? 0;
-
-        $costoEnvio = $this->domicilio?->costo_envio ?? 0;
+        $subtotal   = $this->subtotal ?? 0;
+        $descuento  = $this->descuento_manual ?? 0;
+        $costoEnvio = $this->costo_envio ?? 0;  // ← leer del atributo, no de la relación
 
         return max($subtotal - $descuento + $costoEnvio, 0);
     }

@@ -10,6 +10,7 @@ use App\Http\Controllers\ColorController;
 use App\Http\Controllers\EfectoController;
 use App\Http\Controllers\SaborController;
 use App\Http\Controllers\DescuentoController;
+use App\Http\Controllers\DomicilioController;
 use Illuminate\Support\Facades\DB;
 
 
@@ -24,6 +25,7 @@ Route::resource('clientes', ClienteController::class);
 Route::resource('categorias', CategoriaController::class);
 Route::resource('efectos', EfectoController::class);
 Route::resource('descuentos', DescuentoController::class); 
+Route::resource('domicilios', DomicilioController::class); 
 Route::resource('colores', ColorController::class)->parameters([
     'colores' => 'color'
 ]);

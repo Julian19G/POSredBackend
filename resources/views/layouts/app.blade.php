@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>POS - Sistema de Ventas</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+        <!-- ✅ Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/css/select2.min.css" rel="stylesheet" />
+
+    
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm sticky-top">
@@ -95,6 +99,12 @@
                     </a>
                 </li>
 
+                  <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('domicilios.*') ? 'active fw-semibold' : '' }}"
+                       href="{{ route('domicilios.index') }}">
+                        Domicilios
+                    </a>
+                </li>
             </ul>
         </div>
     </div>
@@ -103,5 +113,13 @@
     <main class="container">
         @yield('content')
     </main> 
+<!-- ✅ jQuery (SIEMPRE primero) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- ✅ Select2 JS (DESPUÉS de jQuery) -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/js/select2.min.js"></script>
 </body>
 </html>

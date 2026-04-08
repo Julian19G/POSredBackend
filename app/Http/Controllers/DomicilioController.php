@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Domicilio;
+use App\Models\Cliente;
 use Illuminate\Http\Request;
 
 class DomicilioController extends Controller

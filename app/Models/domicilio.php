@@ -11,18 +11,17 @@ class Domicilio extends Model
 
     protected $fillable = [
         'venta_id',
-        'cliente_id',
         'direccion',
         'ciudad',
         'departamento',
         'pais',
-        'telefono',
-        'estado',       // pendiente, enviado, entregado, cancelado
+        'estado',
         'costo_envio',
         'fecha_envio',
         'fecha_entrega',
         'comentarios',
     ];
+
 
     protected $casts = [
         'costo_envio' => 'float',
