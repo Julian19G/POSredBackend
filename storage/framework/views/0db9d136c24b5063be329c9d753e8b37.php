@@ -63,7 +63,12 @@
                         Categorías
                     </a>
                 </li>
-
+                <li class="nav-item">
+                    <a class="nav-link <?php echo e(request()->routeIs('pedidos.*') ? 'active fw-semibold' : ''); ?>"
+                       href="<?php echo e(route('pedidos.index')); ?>">
+                        Pedidos
+                    </a>
+                </li>
                 <li class="nav-item">
                     <a class="nav-link <?php echo e(request()->routeIs('efectos.*') ? 'active fw-semibold' : ''); ?>"
                        href="<?php echo e(route('efectos.index')); ?>">

@@ -63,7 +63,12 @@
                         Categorías
                     </a>
                 </li>
-
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('pedidos.*') ? 'active fw-semibold' : '' }}"
+                       href="{{ route('pedidos.index') }}">
+                        Pedidos
+                    </a>
+                </li>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('efectos.*') ? 'active fw-semibold' : '' }}"
                        href="{{ route('efectos.index') }}">

@@ -11,6 +11,7 @@ use App\Http\Controllers\EfectoController;
 use App\Http\Controllers\SaborController;
 use App\Http\Controllers\DescuentoController;
 use App\Http\Controllers\DomicilioController;
+use App\Http\Controllers\PedidoController;
 use Illuminate\Support\Facades\DB;
 
 
@@ -25,10 +26,16 @@ Route::resource('clientes', ClienteController::class);
 Route::resource('categorias', CategoriaController::class);
 Route::resource('efectos', EfectoController::class);
 Route::resource('descuentos', DescuentoController::class); 
+Route::resource('pedidos', PedidoController::class); 
 Route::resource('domicilios', DomicilioController::class); 
 Route::resource('colores', ColorController::class)->parameters([
     'colores' => 'color'
 ]);
+
+// routes/web.php
+Route::resource('pedidos', PedidoController::class)->only(['index', 'show']);
+Route::patch('pedidos/{pedido}/estado', [PedidoController::class, 'actualizarEstado'])->name('pedidos.estado');
+Route::patch('pedidos/{pedido}/pago',   [PedidoController::class, 'registrarPago'])->name('pedidos.pago');
 
 Route::resource('sabores', SaborController::class)->parameters([
     'sabores' => 'sabor'

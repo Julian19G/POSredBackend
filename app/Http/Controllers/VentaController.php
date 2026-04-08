@@ -7,6 +7,7 @@ use App\Models\DetalleVenta;
 use App\Models\Producto;
 use App\Models\Cliente;
 use App\Models\Descuento;
+use App\Models\Pedido;
 use App\Models\Domicilio;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -126,6 +127,14 @@ public function store(Request $request)
                 'comentarios'   => $request->comentarios,
             ]);
         }
+
+               // 8. Crear pedido automáticamente ← AGREGAR ESTO
+        Pedido::create([
+            'venta_id'    => $venta->id,
+            'estado'      => 'nuevo',
+            'estado_pago' => 'pendiente',
+        ]);
+
 
         DB::commit();
 
