@@ -20,6 +20,11 @@ class Categoria extends Model
         'slug',
     ];
 
+
+        public function productos()
+    {
+        return $this->hasMany(\App\Models\Producto::class);
+    }
     public static function boot()
     {
         parent::boot();

@@ -52,15 +52,10 @@ class CategoriaController extends Controller
 
 
     public function show($id)
-{
-    // Busca la categoría o lanza un error 404 si no existe
-    $categoria = Categoria::findOrFail($id);
-
-    // Retorna la vista show.blade.php
-    return view('categorias.show', compact('categoria'));
-}
-
-
+    {
+        $categoria = Categoria::with('productos')->findOrFail($id);
+        return view('categorias.show', compact('categoria'));
+    }
     /**
      * Muestra el formulario para editar una categoría.
      */
