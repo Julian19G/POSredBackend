@@ -15,6 +15,7 @@ class Domicilio extends Model
         'ciudad',
         'departamento',
         'pais',
+        'telefono',
         'estado',
         'costo_envio',
         'fecha_envio',
@@ -22,10 +23,9 @@ class Domicilio extends Model
         'comentarios',
     ];
 
-
     protected $casts = [
-        'costo_envio' => 'float',
-        'fecha_envio' => 'datetime',
+        'costo_envio'   => 'float',
+        'fecha_envio'   => 'datetime',
         'fecha_entrega' => 'datetime',
     ];
 
@@ -38,11 +38,18 @@ class Domicilio extends Model
     }
 
     /**
-     * Relación con cliente
+     * Cliente a través de la venta
      */
     public function cliente()
     {
-        return $this->belongsTo(\App\Models\Cliente::class);
+        return $this->hasOneThrough(
+            \App\Models\Cliente::class,
+            \App\Models\Venta::class,
+            'id',          // FK en ventas que apunta a domicilios (venta_id en domicilios)
+            'id',          // PK de clientes
+            'venta_id',    // columna local en domicilios
+            'cliente_id'   // columna en ventas que apunta a clientes
+        );
     }
 
     /**
@@ -58,7 +65,7 @@ class Domicilio extends Model
      */
     public function marcarEntregado()
     {
-        $this->estado = 'entregado';
+        $this->estado       = 'entregado';
         $this->fecha_entrega = now();
         $this->save();
     }
