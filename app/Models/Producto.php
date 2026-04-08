@@ -74,4 +74,20 @@ class Producto extends Model
     {
         return $query->where('activo', true);
     }
+
+    protected static function boot()
+{
+    parent::boot();
+
+    static::saving(function ($producto) {
+        if ($producto->stock <= 0) {
+            $producto->stock  = 0;
+            $producto->activo = false;
+        }
+        // Solo reactiva si el campo activo no fue modificado manualmente
+        if ($producto->stock > 0 && !$producto->isDirty('activo')) {
+            $producto->activo = true;
+        }
+    });
+}
 }

@@ -13,12 +13,15 @@ use Illuminate\Support\Facades\Storage;
 class ProductoController extends Controller
 {
 public function index()
-    {
-        $productos = Producto::with(['sabores', 'colores', 'efectos'])->get();
+{
+    // Sincroniza activo/inactivo según stock antes de mostrar
+    Producto::where('stock', '<=', 0)->where('activo', true)->update(['activo' => false]);
+    Producto::where('stock', '>', 0)->where('activo', false)->update(['activo' => true]);
 
-        return view('productos.index', compact('productos'));
-    }
+    $productos = Producto::with(['categoria', 'sabores', 'colores', 'efectos'])->get();
 
+    return view('productos.index', compact('productos'));
+}
 
 public function create()
 {
