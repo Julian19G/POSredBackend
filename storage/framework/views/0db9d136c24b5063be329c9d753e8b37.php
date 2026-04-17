@@ -69,33 +69,7 @@
                         Pedidos
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link <?php echo e(request()->routeIs('efectos.*') ? 'active fw-semibold' : ''); ?>"
-                       href="<?php echo e(route('efectos.index')); ?>">
-                        Efectos
-                    </a>
-                </li>
 
-                <li class="nav-item">
-                    <a class="nav-link <?php echo e(request()->routeIs('colores.*') ? 'active fw-semibold' : ''); ?>"
-                       href="<?php echo e(route('colores.index')); ?>">
-                        Colores
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link <?php echo e(request()->routeIs('sabores.*') ? 'active fw-semibold' : ''); ?>"
-                       href="<?php echo e(route('sabores.index')); ?>">
-                        Sabores
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link <?php echo e(request()->routeIs('pivotes.*') ? 'active fw-semibold' : ''); ?>"
-                       href="<?php echo e(route('pivotes.index')); ?>">
-                        Pivotes
-                    </a>
-                </li>
 
                   <li class="nav-item">
                     <a class="nav-link <?php echo e(request()->routeIs('descuentos.*') ? 'active fw-semibold' : ''); ?>"

@@ -29,15 +29,6 @@
                         <?php echo e($producto->descripcion ?: 'Sin descripción disponible.'); ?>
 
                     </p>
-
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <p class="card-text mb-1">
-                                <strong>Precio:</strong><br>
-                                $<?php echo e(number_format($producto->precio, 0, ',', '.')); ?>
-
-                            </p>
-                        </div>
                         <div class="col-md-6">
                             <p class="card-text mb-1">
                                 <strong>Stock:</strong><br>
@@ -46,6 +37,41 @@
                             </p>
                         </div>
                     </div>
+                    <div class="mt-4">
+                    <h5 class="fw-bold">Variantes / Presentaciones</h5>
+                    <?php if($producto->variantes->count()): ?>
+                        <table class="table table-bordered table-sm mt-2">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Cant. por variante</th>
+                                    <th>Precio</th>
+                                    <th>Stock</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php $__currentLoopData = $producto->variantes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $v): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <tr>
+                                        <td><?php echo e($v->nombre); ?></td>
+                                        <td><?php echo e($v->cantidad_por_variante); ?></td>
+                                        <td>$<?php echo e(number_format($v->precio, 0, ',', '.')); ?></td>
+                                        <td><?php echo e($v->stock); ?></td>
+                                        <td>
+                                            <?php if($v->activo): ?>
+                                                <span class="badge bg-success">Activo</span>
+                                            <?php else: ?>
+                                                <span class="badge bg-secondary">Inactivo</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                            </tbody>
+                                        </table>
+                                    <?php else: ?>
+                                        <p class="text-muted">Este producto no tiene variantes registradas.</p>
+                                    <?php endif; ?>
+                                </div>
 
                     <p class="card-text mb-2">
                         <strong>Categoría:</strong><br>

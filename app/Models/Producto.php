@@ -15,18 +15,19 @@ class Producto extends Model
     use HasFactory;
 
     protected $fillable = [
-        'nombre',
-        'descripcion',
-        'precio',
-        'stock',
-        'imagen',
-        'activo',
-        'categoria_id',
+    'nombre', 'descripcion', 'stock',
+    'imagen', 'activo', 'categoria_id'
+   
     ];
 
     // -----------------------------
     //   Relaciones
     // -----------------------------
+
+    public function variantes()
+    {
+        return $this->hasMany(Variante::class);
+    }
 
     public function categoria()
     {

@@ -17,20 +17,20 @@
 
     <table class="table table-bordered table-hover align-middle text-center">
         <thead class="table-dark">
-            <tr>
-                <th>ID</th>
-                <th>Imagen</th>
-                <th>Nombre</th>
-                <th>Categoría</th>
-                <th>Sabores</th>
-                <th>Colores</th>
-                <th>Efectos</th>
-                <th>Descripción</th>
-                <th>Precio</th>
-                <th>Stock</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-            </tr>
+      <tr>
+        <th>ID</th>
+        <th>Imagen</th>
+        <th>Nombre</th>
+        <th>Categoría</th>
+        <th>Sabores</th>
+        <th>Colores</th>
+        <th>Efectos</th>
+        <th>Descripción</th>
+        <th>Stock Variante</th>  
+        <th>Stock base</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+    </tr>
         </thead>
         <tbody>
             @forelse($productos as $producto)
@@ -80,7 +80,13 @@
                     </td>
 
                     <td>{{ Str::limit($producto->descripcion, 40, '...') }}</td>
-                    <td>${{ number_format($producto->precio, 0, ',', '.') }}</td>
+                    <td>
+                        @forelse($producto->variantes as $v)
+                            <span class="badge bg-dark">{{ $v->nombre }} — ${{ number_format($v->precio, 0, ',', '.') }}</span><br>
+                        @empty
+                            <span class="text-muted">Sin variantes</span>
+                        @endforelse
+                    </td>
                     <td>{{ $producto->stock }}</td>
 
                     <td>

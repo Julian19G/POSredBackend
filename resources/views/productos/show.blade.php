@@ -28,14 +28,6 @@
                         <strong>Descripción:</strong><br>
                         {{ $producto->descripcion ?: 'Sin descripción disponible.' }}
                     </p>
-
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <p class="card-text mb-1">
-                                <strong>Precio:</strong><br>
-                                ${{ number_format($producto->precio, 0, ',', '.') }}
-                            </p>
-                        </div>
                         <div class="col-md-6">
                             <p class="card-text mb-1">
                                 <strong>Stock:</strong><br>
@@ -43,6 +35,41 @@
                             </p>
                         </div>
                     </div>
+                    <div class="mt-4">
+                    <h5 class="fw-bold">Variantes / Presentaciones</h5>
+                    @if($producto->variantes->count())
+                        <table class="table table-bordered table-sm mt-2">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Cant. por variante</th>
+                                    <th>Precio</th>
+                                    <th>Stock</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($producto->variantes as $v)
+                                    <tr>
+                                        <td>{{ $v->nombre }}</td>
+                                        <td>{{ $v->cantidad_por_variante }}</td>
+                                        <td>${{ number_format($v->precio, 0, ',', '.') }}</td>
+                                        <td>{{ $v->stock }}</td>
+                                        <td>
+                                            @if($v->activo)
+                                                <span class="badge bg-success">Activo</span>
+                                            @else
+                                                <span class="badge bg-secondary">Inactivo</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    @else
+                                        <p class="text-muted">Este producto no tiene variantes registradas.</p>
+                                    @endif
+                                </div>
 
                     <p class="card-text mb-2">
                         <strong>Categoría:</strong><br>

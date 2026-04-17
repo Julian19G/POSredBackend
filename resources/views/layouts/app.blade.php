@@ -69,33 +69,7 @@
                         Pedidos
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('efectos.*') ? 'active fw-semibold' : '' }}"
-                       href="{{ route('efectos.index') }}">
-                        Efectos
-                    </a>
-                </li>
 
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('colores.*') ? 'active fw-semibold' : '' }}"
-                       href="{{ route('colores.index') }}">
-                        Colores
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('sabores.*') ? 'active fw-semibold' : '' }}"
-                       href="{{ route('sabores.index') }}">
-                        Sabores
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('pivotes.*') ? 'active fw-semibold' : '' }}"
-                       href="{{ route('pivotes.index') }}">
-                        Pivotes
-                    </a>
-                </li>
 
                   <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('descuentos.*') ? 'active fw-semibold' : '' }}"

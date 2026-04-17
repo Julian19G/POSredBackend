@@ -34,13 +34,6 @@
         </div>
 
         
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label for="precio" class="form-label fw-semibold">Precio</label>
-                <input type="number" step="0.01" name="precio" id="precio" class="form-control" 
-                       value="<?php echo e(old('precio', $producto->precio)); ?>" required>
-            </div>
-
             <div class="col-md-6 mb-3">
                 <label for="stock" class="form-label fw-semibold">Stock</label>
                 <input type="number" name="stock" id="stock" class="form-control" 
@@ -83,6 +76,114 @@
                 <option value="0" <?php echo e(old('activo', $producto->activo) == 0 ? 'selected' : ''); ?>>Inactivo</option>
             </select>
         </div>
+                
+        <div class="mb-4">
+            <label class="form-label fw-semibold">Variantes / Presentaciones</label>
+            <div id="variantes-container">
+
+                <?php $__empty_1 = true; $__currentLoopData = $producto->variantes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $i => $variante): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                    <div class="variante-row border rounded p-3 mb-3 bg-light">
+                        
+                        <input type="hidden" name="variantes[<?php echo e($i); ?>][id]" value="<?php echo e($variante->id); ?>">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label">Nombre</label>
+                                <input type="text" name="variantes[<?php echo e($i); ?>][nombre]"
+                                    class="form-control" value="<?php echo e(old("variantes.$i.nombre", $variante->nombre)); ?>" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Cantidad por variante</label>
+                                <input type="number" name="variantes[<?php echo e($i); ?>][cantidad_por_variante]"
+                                    class="form-control" value="<?php echo e(old("variantes.$i.cantidad_por_variante", $variante->cantidad_por_variante)); ?>" min="1" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Precio</label>
+                                <input type="number" step="0.01" name="variantes[<?php echo e($i); ?>][precio]"
+                                    class="form-control" value="<?php echo e(old("variantes.$i.precio", $variante->precio)); ?>" min="0" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Stock</label>
+                                <input type="number" name="variantes[<?php echo e($i); ?>][stock]"
+                                    class="form-control" value="<?php echo e(old("variantes.$i.stock", $variante->stock)); ?>" min="0" required>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="button" class="btn btn-danger w-100 remove-variante">Eliminar</button>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                    
+                    <div class="variante-row border rounded p-3 mb-3 bg-light">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label">Nombre</label>
+                                <input type="text" name="variantes[0][nombre]" class="form-control" placeholder="Ej: x10">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Cantidad por variante</label>
+                                <input type="number" name="variantes[0][cantidad_por_variante]" class="form-control" min="1">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Precio</label>
+                                <input type="number" step="0.01" name="variantes[0][precio]" class="form-control" min="0">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Stock</label>
+                                <input type="number" name="variantes[0][stock]" class="form-control" min="0">
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="button" class="btn btn-danger w-100 remove-variante">Eliminar</button>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+            </div>
+            <button type="button" id="add-variante" class="btn btn-success btn-sm">➕ Agregar variante</button>
+        </div>
+
+        <script>
+        let varianteIndex = <?php echo e($producto->variantes->count() ?: 1); ?>;
+
+        document.getElementById('add-variante').addEventListener('click', function () {
+            const container = document.getElementById('variantes-container');
+            const row = document.createElement('div');
+            row.classList.add('variante-row', 'border', 'rounded', 'p-3', 'mb-3', 'bg-light');
+            row.innerHTML = `
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Nombre</label>
+                        <input type="text" name="variantes[${varianteIndex}][nombre]" 
+                            class="form-control" placeholder="Ej: x10">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Cantidad por variante</label>
+                        <input type="number" name="variantes[${varianteIndex}][cantidad_por_variante]" 
+                            class="form-control" min="1">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Precio</label>
+                        <input type="number" step="0.01" name="variantes[${varianteIndex}][precio]" 
+                            class="form-control" min="0">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Stock</label>
+                        <input type="number" name="variantes[${varianteIndex}][stock]" 
+                            class="form-control" min="0">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="button" class="btn btn-danger w-100 remove-variante">Eliminar</button>
+                    </div>
+                </div>`;
+            container.appendChild(row);
+            row.querySelector('.remove-variante').addEventListener('click', () => row.remove());
+            varianteIndex++;
+        });
+
+        document.querySelectorAll('.remove-variante').forEach(btn => btn.addEventListener('click', function () {
+            this.closest('.variante-row').remove();
+        }));
+        </script>
 
                 
         <div class="mb-3">

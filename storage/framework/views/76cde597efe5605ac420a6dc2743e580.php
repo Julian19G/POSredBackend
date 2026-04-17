@@ -18,20 +18,20 @@
 
     <table class="table table-bordered table-hover align-middle text-center">
         <thead class="table-dark">
-            <tr>
-                <th>ID</th>
-                <th>Imagen</th>
-                <th>Nombre</th>
-                <th>Categoría</th>
-                <th>Sabores</th>
-                <th>Colores</th>
-                <th>Efectos</th>
-                <th>Descripción</th>
-                <th>Precio</th>
-                <th>Stock</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-            </tr>
+      <tr>
+        <th>ID</th>
+        <th>Imagen</th>
+        <th>Nombre</th>
+        <th>Categoría</th>
+        <th>Sabores</th>
+        <th>Colores</th>
+        <th>Efectos</th>
+        <th>Descripción</th>
+        <th>Stock Variante</th>  
+        <th>Stock base</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+    </tr>
         </thead>
         <tbody>
             <?php $__empty_1 = true; $__currentLoopData = $productos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $producto): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
@@ -81,7 +81,13 @@
                     </td>
 
                     <td><?php echo e(Str::limit($producto->descripcion, 40, '...')); ?></td>
-                    <td>$<?php echo e(number_format($producto->precio, 0, ',', '.')); ?></td>
+                    <td>
+                        <?php $__empty_2 = true; $__currentLoopData = $producto->variantes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $v): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_2 = false; ?>
+                            <span class="badge bg-dark"><?php echo e($v->nombre); ?> — $<?php echo e(number_format($v->precio, 0, ',', '.')); ?></span><br>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_2): ?>
+                            <span class="text-muted">Sin variantes</span>
+                        <?php endif; ?>
+                    </td>
                     <td><?php echo e($producto->stock); ?></td>
 
                     <td>
