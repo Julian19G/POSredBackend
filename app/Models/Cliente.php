@@ -14,9 +14,19 @@ class Cliente extends Model
     protected $fillable = [
         'nombre',
         'telefono',
+        'whatsapp',
+        'instagram',
         'email',
         'direccion',
+        'barrio',
+        'ciudad',
+        'fecha_nacimiento',
+        'notas',
         'referido_por',
+    ];
+
+    protected $casts = [
+        'fecha_nacimiento' => 'date',
     ];
 
     //Relacionar que un cliente fue referido por otro

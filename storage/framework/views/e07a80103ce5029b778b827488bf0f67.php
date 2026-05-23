@@ -2,7 +2,6 @@
 
 <?php $__env->startSection('content'); ?>
 
-
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 
@@ -21,6 +20,8 @@
     #resumen-box { background: #f0f4ff; border-radius: 12px; padding: 20px; }
     #resumen-box .line { display: flex; justify-content: space-between; margin-bottom: 6px; }
     #resumen-box .total-line { font-size: 1.2rem; font-weight: 700; border-top: 2px solid #adb5bd; padding-top: 10px; margin-top: 6px; }
+
+    .variante-info { font-size: 0.8rem; color: #6c757d; margin-top: 4px; }
 </style>
 
 <div class="container-fluid d-flex justify-content-center align-items-start py-5">
@@ -30,7 +31,6 @@
 
                 <h1 class="mb-2 text-center">🛒 Registrar Nueva Venta</h1>
 
-                
                 <div class="step-indicator">
                     <div class="step-dot active" id="dot-1"></div>
                     <div class="step-dot" id="dot-2"></div>
@@ -57,25 +57,41 @@
                     <div class="step" id="step-1">
                         <h4 class="mb-3">1️⃣ Cliente y Productos</h4>
 
-                        
-                        <div class="mb-4">
-                            <label class="form-label fw-semibold">Cliente</label>
-                            <select name="cliente_id" id="cliente_select" class="form-select" required>
-                                <option value="">Buscar por nombre, teléfono…</option>
-                                <?php $__currentLoopData = $clientes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $cliente): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                    <option value="<?php echo e($cliente->id); ?>"
-                                        data-nombre="<?php echo e($cliente->nombre); ?>"
-                                        <?php echo e(old('cliente_id') == $cliente->id ? 'selected' : ''); ?>>
-                                        <?php echo e($cliente->nombre); ?> — <?php echo e($cliente->telefono); ?>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-7">
+                                <label class="form-label fw-semibold">Cliente <span class="text-danger">*</span></label>
+                                <select name="cliente_id" id="cliente_select" class="form-select" required>
+                                    <option value="">Buscar por nombre, teléfono…</option>
+                                    <?php $__currentLoopData = $clientes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $cliente): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <option value="<?php echo e($cliente->id); ?>"
+                                            data-nombre="<?php echo e($cliente->nombre); ?>"
+                                            <?php echo e(old('cliente_id') == $cliente->id ? 'selected' : ''); ?>>
+                                            <?php echo e($cliente->nombre); ?> — <?php echo e($cliente->telefono); ?>
 
-                                    </option>
-                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                                <option value="nuevo">➕ Registrar nuevo cliente</option>
-                            </select>
+                                        </option>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                    <option value="nuevo">➕ Registrar nuevo cliente</option>
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label fw-semibold">Vendedor</label>
+                                <select name="vendedor_id" id="vendedor_select" class="form-select">
+                                    <option value="">— Sin asignar —</option>
+                                    <?php $__currentLoopData = $vendedores; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $v): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <option value="<?php echo e($v->id); ?>"
+                                            <?php echo e(old('vendedor_id') == $v->id ? 'selected' : ''); ?>>
+                                            <?php echo e($v->nombre); ?>
+
+                                            <?php if($v->comision_porcentaje > 0): ?>
+                                                (<?php echo e($v->comision_porcentaje); ?>%)
+                                            <?php endif; ?>
+                                        </option>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                </select>
+                            </div>
                         </div>
 
-                        
-                        <h5 class="fw-bold">Productos</h5>
+                        <h5 class="fw-bold">Productos y variantes</h5>
                         <div id="productos-container"></div>
 
                         <div class="d-flex justify-content-between align-items-center mt-3 mb-2">
@@ -89,8 +105,6 @@
                     </div>
 
                     
-                    
-                    
                     <div class="step d-none" id="step-2">
                         <h4 class="mb-3">2️⃣ Descuento</h4>
 
@@ -103,7 +117,6 @@
                             </select>
                         </div>
 
-                        
                         <div id="descuento-catalogo" class="d-none mb-3">
                             <label class="form-label fw-semibold">Descuento disponible</label>
                             <select name="descuento_id" id="descuento_id" class="form-select">
@@ -116,10 +129,8 @@
 
                                         <?php if($d->codigo): ?> (<?php echo e($d->codigo); ?>) <?php endif; ?>
                                         —
-                                        <?php if($d->tipo === 'porcentaje'): ?>
-                                            <?php echo e($d->valor); ?>%
-                                        <?php else: ?>
-                                            $<?php echo e(number_format($d->valor, 2, ',', '.')); ?>
+                                        <?php if($d->tipo === 'porcentaje'): ?> <?php echo e($d->valor); ?>%
+                                        <?php else: ?> $<?php echo e(number_format($d->valor, 2, ',', '.')); ?>
 
                                         <?php endif; ?>
                                     </option>
@@ -127,7 +138,6 @@
                             </select>
                         </div>
 
-                        
                         <div id="descuento-manual" class="d-none mb-3">
                             <div class="row g-3">
                                 <div class="col-md-6">
@@ -149,9 +159,6 @@
                         </div>
                     </div>
 
-                    
-                    
-                    
                     <div class="step d-none" id="step-3">
                         <h4 class="mb-3">3️⃣ Domicilio</h4>
 
@@ -205,9 +212,6 @@
                         </div>
                     </div>
 
-                    
-                    
-                    
                     <div class="step d-none" id="step-4">
                         <h4 class="mb-3">4️⃣ Resumen de la Venta</h4>
 
@@ -226,6 +230,27 @@
                             </div>
                         </div>
 
+                        <div class="mb-3 mt-3">
+                            <label class="form-label fw-semibold">Método de pago <span class="text-muted fw-normal small">(opcional)</span></label>
+                            <select name="metodo_pago" id="metodo_pago" class="form-select">
+                                <option value="">— Sin especificar (pagar después) —</option>
+                                <option value="efectivo">💵 Efectivo</option>
+                                <option value="transferencia">🏦 Transferencia</option>
+                                <option value="tarjeta">💳 Tarjeta</option>
+                                <option value="cripto">🪙 Cripto</option>
+                                <option value="otro">🔄 Otro</option>
+                            </select>
+                            <div class="form-text text-muted">
+                                La venta se guarda como <strong>Pendiente</strong>. Puedes registrar el pago desde el módulo de Pedidos cuando lo recibas.
+                            </div>
+                        </div>
+
+                        <div id="cambio-box" class="d-none mb-3">
+                            <label class="form-label fw-semibold">Monto recibido ($) <span class="text-muted fw-normal small">(solo referencia, no bloquea)</span></label>
+                            <input type="number" id="monto_recibido" class="form-control" min="0" step="1000" placeholder="0">
+                            <div class="mt-2 p-2 bg-success-subtle rounded text-success fw-bold" id="cambio-result"></div>
+                        </div>
+
                         <div class="d-flex justify-content-between mt-4">
                             <button type="button" class="btn btn-secondary prev-btn">← Anterior</button>
                             <button type="submit" class="btn btn-success btn-lg px-5">
@@ -240,20 +265,21 @@
     </div>
 </div>
 
-
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
 /* ============================================================
-   DATA de productos desde Laravel
+   DATA: productos con sus variantes desde Laravel
    ============================================================ */
 const PRODUCTOS = <?php echo json_encode($productos, 15, 512) ?>;
+// Estructura esperada:
+// [{ id, nombre, stock, variantes: [{ id, nombre, precio, stock, cantidad_por_variante }] }]
 
 /* ============================================================
    UTILIDADES
    ============================================================ */
-const fmt = n => '$' + parseFloat(n || 0).toLocaleString('es-CO', {minimumFractionDigits: 2});
+const fmt = n => '$' + parseFloat(n || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 });
 
 /* ============================================================
    PASOS
@@ -264,8 +290,6 @@ const totalSteps = 4;
 function showStep(n) {
     document.querySelectorAll('.step').forEach(s => s.classList.add('d-none'));
     document.getElementById('step-' + n).classList.remove('d-none');
-
-    // dots
     for (let i = 1; i <= totalSteps; i++) {
         const dot = document.getElementById('dot-' + i);
         dot.classList.remove('active', 'done');
@@ -318,43 +342,161 @@ function validarPaso1() {
         alert('Seleccione un cliente válido.');
         return false;
     }
+
     const rows = document.querySelectorAll('.producto-row');
+    if (rows.length === 0) {
+        alert('Agregue al menos un producto.');
+        return false;
+    }
+
     for (const row of rows) {
-        const sel = row.querySelector('select[name="productos[]"]');
-        const qty = row.querySelector('input[name="cantidades[]"]');
-        if (!sel.value) { alert('Seleccione todos los productos.'); return false; }
-        if (!qty.value || qty.value < 1) { alert('Las cantidades deben ser al menos 1.'); return false; }
+        const producto = row.querySelector('.select-producto').value;
+        const variante = row.querySelector('.select-variante').value;
+        const qty      = row.querySelector('.input-cantidad').value;
+
+        if (!producto) { alert('Seleccione el producto en todas las filas.'); return false; }
+        if (!variante) { alert('Seleccione la variante en todas las filas.'); return false; }
+
+        if (variante === '0') {
+            const precio = parseFloat(row.querySelector('.input-precio-manual').value) || 0;
+            if (precio <= 0) {
+                alert('Ingrese un precio mayor a 0 para los productos sin variante.');
+                return false;
+            }
+        }
+
+        if (!qty || qty < 1) { alert('Las cantidades deben ser al menos 1.'); return false; }
     }
     return true;
 }
 
 /* ============================================================
-   FILAS DE PRODUCTOS
+   FILA DE PRODUCTO → VARIANTE
    ============================================================ */
 function buildProductoRow() {
-    const opciones = PRODUCTOS.map(p =>
-        `<option value="${p.id}" data-precio="${p.precio}">
-            ${p.nombre} — ${fmt(p.precio)} (Stock: ${p.stock})
-        </option>`
+    const opcionesProducto = PRODUCTOS.map(p =>
+        `<option value="${p.id}">${p.nombre} (Stock base: ${p.stock})</option>`
     ).join('');
 
     const div = document.createElement('div');
-    div.className = 'producto-row row g-2 align-items-end mb-2';
+    div.className = 'producto-row row g-2 align-items-start mb-2';
     div.innerHTML = `
-        <div class="col-md-6">
-            <label class="form-label small">Producto</label>
-            <select name="productos[]" class="form-select" required>
-                <option value="">Seleccione un producto</option>
-                ${opciones}
+        <div class="col-md-4">
+            <label class="form-label small fw-semibold">Producto</label>
+            <select class="form-select select-producto" required>
+                <option value="">— Seleccione producto —</option>
+                ${opcionesProducto}
             </select>
         </div>
         <div class="col-md-4">
-            <label class="form-label small">Cantidad</label>
-            <input type="number" name="cantidades[]" class="form-control" min="1" value="1" required>
+            <label class="form-label small fw-semibold">Variante / Presentación</label>
+            <select class="form-select select-variante" name="variantes[]" required disabled>
+                <option value="">— Primero elija producto —</option>
+            </select>
+            <div class="variante-info mt-1"></div>
+            <div class="precio-manual-group mt-2 d-none">
+                <label class="form-label small text-muted mb-1">Precio unitario</label>
+                <input type="number" class="form-control form-control-sm input-precio-manual"
+                       min="0" step="0.01" placeholder="0.00">
+            </div>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small fw-semibold">Cantidad</label>
+            <input type="number" class="form-control input-cantidad" name="cantidades[]"
+                   min="1" value="1" required>
         </div>
         <div class="col-md-2 d-flex align-items-end">
             <button type="button" class="btn btn-danger btn-sm btn-remove w-100">✖</button>
-        </div>`;
+        </div>
+        <input type="hidden" class="input-producto-id" name="productos[]" value="">
+        <input type="hidden" class="input-precio-manual-hidden" name="precios_manuales[]" value="0">`;
+
+    const selectProducto      = div.querySelector('.select-producto');
+    const selectVariante      = div.querySelector('.select-variante');
+    const infoVariante        = div.querySelector('.variante-info');
+    const precioManualGroup   = div.querySelector('.precio-manual-group');
+    const inputPrecioManual   = div.querySelector('.input-precio-manual');
+    const hiddenProductoId    = div.querySelector('.input-producto-id');
+    const hiddenPrecioManual  = div.querySelector('.input-precio-manual-hidden');
+
+    selectProducto.addEventListener('change', function () {
+        const productoId = parseInt(this.value);
+        const producto   = PRODUCTOS.find(p => p.id === productoId);
+
+        hiddenProductoId.value = this.value || '';
+        selectVariante.innerHTML = '<option value="">— Seleccione variante —</option>';
+        infoVariante.textContent = '';
+        precioManualGroup.classList.add('d-none');
+        inputPrecioManual.value  = '';
+        hiddenPrecioManual.value = '0';
+
+        if (!producto) {
+            selectVariante.disabled = true;
+            return;
+        }
+
+        const variantesDisponibles = producto.variantes.filter(v => v.activo && v.stock > 0);
+
+        if (!variantesDisponibles.length) {
+            // Sin variantes: opción N/A + campo de precio manual
+            const naOpt = document.createElement('option');
+            naOpt.value              = '0';
+            naOpt.dataset.precio     = '0';
+            naOpt.dataset.noVariante = 'true';
+            naOpt.textContent        = 'N/A — Sin variante';
+            selectVariante.appendChild(naOpt);
+            selectVariante.value    = '0';
+            selectVariante.disabled = false;
+            precioManualGroup.classList.remove('d-none');
+            infoVariante.innerHTML  = '<span class="text-warning small">⚠ Sin variantes registradas. Ingrese el precio unitario.</span>';
+            return;
+        }
+
+        variantesDisponibles.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value           = v.id;
+            opt.dataset.precio  = v.precio;
+            opt.dataset.stock   = v.stock;
+            opt.dataset.consume = v.cantidad_por_variante;
+            opt.textContent     = `${v.nombre} — ${fmt(v.precio)} (Stock: ${v.stock})`;
+            selectVariante.appendChild(opt);
+        });
+
+        selectVariante.disabled = false;
+    });
+
+    selectVariante.addEventListener('change', function () {
+        const opt = this.options[this.selectedIndex];
+        if (!opt || !opt.value) { infoVariante.textContent = ''; return; }
+
+        if (opt.dataset.noVariante === 'true') {
+            precioManualGroup.classList.remove('d-none');
+            infoVariante.innerHTML = '<span class="text-warning small">⚠ Ingrese el precio unitario.</span>';
+            return;
+        }
+
+        precioManualGroup.classList.add('d-none');
+        const precio  = parseFloat(opt.dataset.precio);
+        const stock   = parseInt(opt.dataset.stock);
+        const consume = parseInt(opt.dataset.consume);
+
+        infoVariante.innerHTML = `
+            💵 Precio: <strong>${fmt(precio)}</strong> &nbsp;|&nbsp;
+            📦 Stock variante: <strong>${stock}</strong> &nbsp;|&nbsp;
+            🔢 Consume del producto: <strong>${consume} uds</strong>`;
+
+        const inputCantidad = div.querySelector('.input-cantidad');
+        inputCantidad.max = stock;
+        if (parseInt(inputCantidad.value) > stock) inputCantidad.value = stock;
+    });
+
+    // Precio manual: sincroniza el hidden y el data-precio del N/A option
+    inputPrecioManual.addEventListener('input', function () {
+        const val = parseFloat(this.value) || 0;
+        hiddenPrecioManual.value = val;
+        const naOpt = selectVariante.querySelector('option[data-no-variante="true"]');
+        if (naOpt) naOpt.dataset.precio = val;
+    });
 
     div.querySelector('.btn-remove').addEventListener('click', () => {
         const rows = document.querySelectorAll('.producto-row');
@@ -365,6 +507,7 @@ function buildProductoRow() {
     return div;
 }
 
+// Primera fila al cargar
 document.getElementById('productos-container').appendChild(buildProductoRow());
 
 document.getElementById('add-producto').addEventListener('click', () => {
@@ -389,8 +532,7 @@ document.getElementById('usar_descuento').addEventListener('change', function ()
    ============================================================ */
 document.getElementById('envio_select').addEventListener('change', function () {
     const campos = document.getElementById('domicilio-campos');
-    if (this.value === '1') campos.classList.remove('d-none');
-    else campos.classList.add('d-none');
+    this.value === '1' ? campos.classList.remove('d-none') : campos.classList.add('d-none');
 });
 
 /* ============================================================
@@ -399,8 +541,8 @@ document.getElementById('envio_select').addEventListener('change', function () {
 function getSubtotal() {
     let sub = 0;
     document.querySelectorAll('.producto-row').forEach(row => {
-        const sel = row.querySelector('select[name="productos[]"]');
-        const qty = parseFloat(row.querySelector('input[name="cantidades[]"]').value) || 0;
+        const sel = row.querySelector('.select-variante');
+        const qty = parseFloat(row.querySelector('.input-cantidad').value) || 0;
         const opt = sel.options[sel.selectedIndex];
         const precio = parseFloat(opt?.dataset?.precio || 0);
         sub += precio * qty;
@@ -430,22 +572,34 @@ function buildResumen() {
     const cOpt = cSel.options[cSel.selectedIndex];
     document.getElementById('r-cliente').textContent = cOpt ? cOpt.text : '—';
 
-    // Productos
+    // Productos + variantes
     let prodHtml = '';
     let subtotal = 0;
+
     document.querySelectorAll('.producto-row').forEach(row => {
-        const sel = row.querySelector('select[name="productos[]"]');
-        const qty = parseFloat(row.querySelector('input[name="cantidades[]"]').value) || 0;
-        const opt = sel.options[sel.selectedIndex];
-        if (!opt || !opt.value) return;
-        const precio = parseFloat(opt.dataset.precio || 0);
+        const selProducto = row.querySelector('.select-producto');
+        const selVariante = row.querySelector('.select-variante');
+        const qty = parseFloat(row.querySelector('.input-cantidad').value) || 0;
+
+        const optProducto = selProducto.options[selProducto.selectedIndex];
+        const optVariante = selVariante.options[selVariante.selectedIndex];
+
+        if (!optVariante || !optVariante.value) return;
+
+        const precio = parseFloat(optVariante.dataset.precio || 0);
         const linea  = precio * qty;
-        subtotal += linea;
-        prodHtml += `<div class="line text-muted small">
-            <span>${opt.text.split('—')[0].trim()} × ${qty}</span>
-            <span>${fmt(linea)}</span>
-        </div>`;
+        subtotal    += linea;
+
+        const nombreProducto = optProducto?.text?.split('(')[0].trim() ?? '—';
+        const nombreVariante = optVariante.text?.split('—')[0].trim() ?? '—';
+
+        prodHtml += `
+            <div class="line text-muted small">
+                <span>${nombreProducto} <span class="badge bg-secondary">${nombreVariante}</span> × ${qty}</span>
+                <span>${fmt(linea)}</span>
+            </div>`;
     });
+
     document.getElementById('r-productos-list').innerHTML = prodHtml;
     document.getElementById('r-subtotal').textContent = fmt(subtotal);
 
@@ -461,7 +615,9 @@ function buildResumen() {
 
     // Envío
     const esEnvio = document.getElementById('envio_select').value === '1';
-    const costoEnvio = esEnvio ? (parseFloat(document.getElementById('costo_envio_input').value) || 0) : 0;
+    const costoEnvio = esEnvio
+        ? (parseFloat(document.getElementById('costo_envio_input').value) || 0)
+        : 0;
     const eLine = document.getElementById('r-envio-line');
     if (esEnvio) {
         document.getElementById('r-envio').textContent = fmt(costoEnvio);
@@ -470,9 +626,31 @@ function buildResumen() {
         eLine.style.setProperty('display', 'none', 'important');
     }
 
-    const total = subtotal - descuento + costoEnvio;
-    document.getElementById('r-total').textContent = fmt(total);
+    document.getElementById('r-total').textContent = fmt(subtotal - descuento + costoEnvio);
 }
+
+/* ============================================================
+   MÉTODO DE PAGO / CAMBIO
+   ============================================================ */
+document.getElementById('metodo_pago').addEventListener('change', function () {
+    const box = document.getElementById('cambio-box');
+    box.classList.toggle('d-none', this.value !== 'efectivo');
+    document.getElementById('cambio-result').textContent = '';
+    document.getElementById('monto_recibido').value = '';
+});
+
+document.getElementById('monto_recibido').addEventListener('input', function () {
+    const total = parseFloat(document.getElementById('r-total').textContent.replace(/[^0-9]/g, '')) || 0;
+    const recibido = parseFloat(this.value) || 0;
+    const cambio = recibido - total;
+    const el = document.getElementById('cambio-result');
+    if (recibido > 0) {
+        el.textContent = cambio >= 0 ? 'Cambio: ' + fmt(cambio) : '⚠ Monto insuficiente';
+        el.className = 'mt-2 p-2 rounded fw-bold ' + (cambio >= 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger');
+    } else {
+        el.textContent = '';
+    }
+});
 </script>
 <?php $__env->stopSection(); ?>
 <?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\Usuario\Documents\My Web Sites\POS\Backend\POSRed\resources\views/ventas/create.blade.php ENDPATH**/ ?>

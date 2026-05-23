@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Pedido;
 use App\Models\Venta;
 use App\Models\Domicilio;
+use App\Models\Comprobante;
+use App\Models\Comision;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class PedidoController extends Controller
 {
@@ -25,9 +28,11 @@ class PedidoController extends Controller
     {
         $pedido = Pedido::with([
             'venta.cliente',
-            'venta.detalles.producto',
-            'venta.domicilio',
+            'venta.detalles',
+            'venta.domicilio.zona',
             'venta.descuento',
+            'venta.comision.vendedor',
+            'comprobantes',
         ])->findOrFail($id);
 
         return view('pedidos.show', compact('pedido'));
@@ -84,6 +89,14 @@ class PedidoController extends Controller
                 $pedido->update(['estado_pago' => 'pagado']);
             }
 
+            // — Anular comisión si el pedido se cancela —
+            if ($nuevoEstado === 'cancelado') {
+                $comision = $pedido->venta->comision;
+                if ($comision && $comision->estado === 'pendiente') {
+                    $comision->update(['estado' => 'anulada']);
+                }
+            }
+
             // — Sincronizar estado del DOMICILIO (si existe) —
             if ($pedido->venta->domicilio) {
                 $estadoDomicilio = match ($nuevoEstado) {
@@ -118,5 +131,79 @@ class PedidoController extends Controller
         $pedido->venta->update(['estado' => 'pagada']);
 
         return back()->with('success', '💰 Pago registrado.');
+    }
+
+    /**
+     * Subir comprobante de pago
+     */
+    public function subirComprobante(Request $request, $id)
+    {
+        $request->validate([
+            'tipo'       => 'required|in:efectivo,transferencia,cripto,tarjeta,otro',
+            'monto'      => 'required|numeric|min:0',
+            'referencia' => 'nullable|string|max:255',
+            'imagen'     => 'nullable|image|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+            'notas'      => 'nullable|string|max:500',
+        ]);
+
+        $pedido = Pedido::findOrFail($id);
+
+        $data = [
+            'pedido_id'  => $pedido->id,
+            'tipo'       => $request->tipo,
+            'monto'      => $request->monto,
+            'referencia' => $request->referencia,
+            'notas'      => $request->notas,
+            'estado'     => 'pendiente',
+        ];
+
+        if ($request->hasFile('imagen')) {
+            $data['imagen_path'] = $request->file('imagen')
+                ->store('comprobantes', 'public');
+        }
+
+        Comprobante::create($data);
+
+        return back()->with('success', '📎 Comprobante registrado. Pendiente de verificación.');
+    }
+
+    /**
+     * Verificar comprobante → marca venta como pagada
+     */
+    public function verificarComprobante(Request $request, $pedidoId, $comprobanteId)
+    {
+        $pedido      = Pedido::findOrFail($pedidoId);
+        $comprobante = Comprobante::where('pedido_id', $pedido->id)->findOrFail($comprobanteId);
+
+        $comprobante->update([
+            'estado'         => 'verificado',
+            'notas'          => $request->notas ?? $comprobante->notas,
+            'verificado_en'  => now(),
+        ]);
+
+        $pedido->update([
+            'metodo_pago' => $comprobante->tipo,
+            'estado_pago' => 'pagado',
+        ]);
+
+        $pedido->venta->update(['estado' => 'pagada']);
+
+        return back()->with('success', '✅ Comprobante verificado. Venta marcada como pagada.');
+    }
+
+    /**
+     * Rechazar comprobante
+     */
+    public function rechazarComprobante(Request $request, $pedidoId, $comprobanteId)
+    {
+        $pedido      = Pedido::findOrFail($pedidoId);
+        $comprobante = Comprobante::where('pedido_id', $pedido->id)->findOrFail($comprobanteId);
+
+        $comprobante->update([
+            'estado' => 'rechazado',
+            'notas'  => $request->notas ?? $comprobante->notas,
+        ]);
+
+        return back()->with('success', '❌ Comprobante rechazado.');
     }
 }

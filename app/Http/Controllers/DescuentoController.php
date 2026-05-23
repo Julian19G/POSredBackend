@@ -42,7 +42,8 @@
                 'uso_cliente_maximo' => 'nullable|integer|min:1',
             ]);
 
-            $validated['activo'] = $request->has('activo');
+            $validated['activo']           = $request->has('activo');
+            $validated['aplicable_manual'] = $request->has('aplicable_manual');
 
             Descuento::create($validated);
 
@@ -90,12 +91,13 @@
                 'uso_cliente_maximo' => 'nullable|integer|min:1',
             ]);
 
-            $validated['activo'] = $request->has('activo');
+            $validated['activo']           = $request->has('activo');
+            $validated['aplicable_manual'] = $request->has('aplicable_manual');
 
             $descuento->update($validated);
 
             return redirect()
-                ->route('descuentos.index', $id)
+                ->route('descuentos.index')
                 ->with('success', 'Descuento actualizado correctamente.');
         }
 

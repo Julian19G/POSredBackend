@@ -11,61 +11,69 @@ class Domicilio extends Model
 
     protected $fillable = [
         'venta_id',
+        'zona_id',
         'direccion',
         'ciudad',
         'departamento',
         'pais',
-        'telefono',
         'estado',
         'costo_envio',
         'fecha_envio',
         'fecha_entrega',
         'comentarios',
+        'latitud',
+        'longitud',
+        'referencia_ubicacion',
     ];
 
     protected $casts = [
         'costo_envio'   => 'float',
         'fecha_envio'   => 'datetime',
         'fecha_entrega' => 'datetime',
+        'latitud'       => 'float',
+        'longitud'      => 'float',
     ];
 
-    /**
-     * Relación con venta
-     */
     public function venta()
     {
-        return $this->belongsTo(\App\Models\Venta::class);
+        return $this->belongsTo(Venta::class);
     }
 
-    /**
-     * Cliente a través de la venta
-     */
+    public function zona()
+    {
+        return $this->belongsTo(Zona::class, 'zona_id');
+    }
+
     public function cliente()
     {
         return $this->hasOneThrough(
-            \App\Models\Cliente::class,
-            \App\Models\Venta::class,
-            'id',          // FK en ventas que apunta a domicilios (venta_id en domicilios)
-            'id',          // PK de clientes
-            'venta_id',    // columna local en domicilios
-            'cliente_id'   // columna en ventas que apunta a clientes
+            Cliente::class,
+            Venta::class,
+            'id',
+            'id',
+            'venta_id',
+            'cliente_id'
         );
     }
 
-    /**
-     * Scope por estado
-     */
     public function scopeEstado($query, $estado)
     {
         return $query->where('estado', $estado);
     }
 
-    /**
-     * Marca el domicilio como entregado
-     */
-    public function marcarEntregado()
+    public function scopePendientes($query)
     {
-        $this->estado       = 'entregado';
+        return $query->whereIn('estado', ['pendiente', 'enviado']);
+    }
+
+    public function tieneUbicacion(): bool
+    {
+        return $this->latitud !== null && $this->longitud !== null;
+    }
+
+    public function marcarEntregado(): void
+    {
+        $this->estado        = 'entregado';
         $this->fecha_entrega = now();
         $this->save();
     }

@@ -19,54 +19,83 @@
         @csrf
         @method('PUT')
 
-        {{-- Cliente --}}
-        <div class="mb-3">
-            <label for="cliente_id" class="form-label fw-semibold">Cliente</label>
-            <select name="cliente_id" id="cliente_id" class="form-select" required>
-                @foreach($clientes as $cliente)
-                    <option value="{{ $cliente->id }}" {{ $venta->cliente_id == $cliente->id ? 'selected' : '' }}>
-                        {{ $cliente->nombre }} - {{ $cliente->telefono }}
-                    </option>
-                @endforeach
-            </select>
+        {{-- Cliente + Vendedor --}}
+        <div class="row mb-3 g-3">
+            <div class="col-md-7">
+                <label for="cliente_id" class="form-label fw-semibold">Cliente</label>
+                <select name="cliente_id" id="cliente_id" class="form-select" required>
+                    @foreach($clientes as $cliente)
+                        <option value="{{ $cliente->id }}" {{ $venta->cliente_id == $cliente->id ? 'selected' : '' }}>
+                            {{ $cliente->nombre }}{{ $cliente->telefono ? ' - ' . $cliente->telefono : '' }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label fw-semibold">Vendedor</label>
+                <select name="vendedor_id" class="form-select">
+                    <option value="">— Sin asignar —</option>
+                    @foreach($vendedores as $v)
+                        <option value="{{ $v->id }}" {{ $venta->vendedor_id == $v->id ? 'selected' : '' }}>
+                            {{ $v->nombre }}
+                            @if($v->comision_porcentaje > 0) ({{ $v->comision_porcentaje }}%) @endif
+                        </option>
+                    @endforeach
+                </select>
+            </div>
         </div>
 
         {{-- Productos --}}
         <h5 class="mt-4">🧾 Productos</h5>
         <div id="productos-container">
             @foreach($venta->detalles as $detalle)
-            <div class="producto-row row mb-3 g-2 align-items-end">
+            <div class="producto-row row mb-2 g-2 align-items-end">
+                <input type="hidden" name="productos[]" value="{{ $detalle->producto_id }}">
+                <input type="hidden" name="variantes[]"  value="{{ $detalle->variante_id ?? 0 }}">
+
                 <div class="col-md-4">
-                    <label class="form-label">Producto</label>
-                    <select name="productos[]" class="form-select" required>
-                        <option value="">Seleccione un producto</option>
+                    <label class="form-label small">Producto / variante</label>
+                    <select name="variante_display[]" class="form-select form-select-sm variante-select" disabled>
                         @foreach($productos as $producto)
-                            <option value="{{ $producto->id }}" {{ $detalle->producto_id == $producto->id ? 'selected' : '' }}>
-                                {{ $producto->nombre }} - ${{ number_format($producto->precio, 2, ',', '.') }}
-                            </option>
+                            @foreach($producto->variantes as $variante)
+                                <option value="{{ $variante->id }}"
+                                    data-precio="{{ $variante->precio }}"
+                                    data-producto="{{ $producto->id }}"
+                                    {{ $detalle->variante_id == $variante->id ? 'selected' : '' }}>
+                                    {{ $producto->nombre }} – {{ $variante->nombre }}
+                                    (${{ number_format($variante->precio, 0, ',', '.') }})
+                                </option>
+                            @endforeach
                         @endforeach
                     </select>
+                    <small class="text-muted">
+                        {{ $detalle->nombre_producto }}
+                        @if($detalle->nombre_variante) – {{ $detalle->nombre_variante }} @endif
+                    </small>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label">Cantidad</label>
-                    <input type="number" name="cantidades[]" class="form-control" min="1" value="{{ $detalle->cantidad }}" required>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Descuento manual ($)</label>
-                    <input type="number" name="descuentos[]" class="form-control" step="0.01" min="0" value="{{ $detalle->descuento_manual ?? 0 }}">
+                    <label class="form-label small">Precio unit.</label>
+                    <input type="number" name="precios_manuales[]" class="form-control form-control-sm precio-input"
+                           step="1" min="0" value="{{ $detalle->precio_unitario }}">
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label">Subtotal</label>
-                    <input type="text" class="form-control subtotal" value="${{ number_format(($detalle->precio_unitario * $detalle->cantidad) - $detalle->descuento_manual, 2, ',', '.') }}" readonly>
+                    <label class="form-label small">Cantidad</label>
+                    <input type="number" name="cantidades[]" class="form-control form-control-sm cantidad-input"
+                           min="1" value="{{ $detalle->cantidad }}" required>
                 </div>
-                <div class="col-md-1 text-center">
-                    <button type="button" class="btn btn-danger btn-remove">✖</button>
+                <div class="col-md-2">
+                    <label class="form-label small">Subtotal</label>
+                    <input type="text" class="form-control form-control-sm subtotal-input" readonly
+                           value="{{ number_format($detalle->precio_unitario * $detalle->cantidad, 0, ',', '.') }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove w-100">✖ Quitar</button>
                 </div>
             </div>
             @endforeach
         </div>
 
-        <button type="button" id="add-producto" class="btn btn-secondary mb-3">➕ Agregar otro producto</button>
+        <button type="button" id="add-producto" class="btn btn-outline-secondary btn-sm mb-3">➕ Agregar producto</button>
 
         {{-- Envío --}}
         <h5 class="mt-4">🚚 Envío</h5>
@@ -112,10 +141,10 @@
 
         {{-- Totales --}}
         <div class="mt-4 p-3 border rounded bg-light">
-            <p class="mb-1"><strong>Subtotal:</strong> $<span id="subtotal">{{ number_format($venta->subtotal, 2, ',', '.') }}</span></p>
-            <p class="mb-1"><strong>Descuento total:</strong> $<span id="descuento">{{ number_format($venta->descuento_manual, 2, ',', '.') }}</span></p>
-            <p class="mb-1"><strong>Costo de envío:</strong> $<span id="envio_total">{{ number_format($venta->costo_envio, 2, ',', '.') }}</span></p>
-            <h4><strong>Total:</strong> $<span id="total">{{ number_format($venta->total, 2, ',', '.') }}</span></h4>
+            <p class="mb-1"><strong>Subtotal:</strong> $<span id="subtotal">{{ number_format($venta->subtotal, 0, ',', '.') }}</span></p>
+            <p class="mb-1"><strong>Descuento total:</strong> $<span id="descuento">{{ number_format($venta->descuento_manual, 0, ',', '.') }}</span></p>
+            <p class="mb-1"><strong>Costo de envío:</strong> $<span id="envio_total">{{ number_format($venta->costo_envio, 0, ',', '.') }}</span></p>
+            <h4><strong>Total:</strong> $<span id="total">{{ number_format($venta->total, 0, ',', '.') }}</span></h4>
         </div>
 
         {{-- Botón actualizar --}}
@@ -123,56 +152,55 @@
     </form>
 </div>
 
-{{-- Script de manejo dinámico --}}
 <script>
-    const container = document.getElementById('productos-container');
-    const addBtn = document.getElementById('add-producto');
+const container = document.getElementById('productos-container');
 
-    addBtn.addEventListener('click', () => {
-        const firstRow = container.querySelector('.producto-row');
-        const newRow = firstRow.cloneNode(true);
-
-        newRow.querySelectorAll('select, input').forEach(el => {
-            if (el.tagName === 'SELECT') el.selectedIndex = 0;
-            else el.value = el.name.includes('cantidad') ? 1 : 0;
-        });
-
-        container.appendChild(newRow);
-        actualizarTotales();
+// Recalculate row subtotal and grand total
+function recalcular() {
+    let subtotal = 0;
+    container.querySelectorAll('.producto-row').forEach(row => {
+        const precio   = parseFloat(row.querySelector('.precio-input').value)   || 0;
+        const cantidad = parseFloat(row.querySelector('.cantidad-input').value)  || 0;
+        const sub      = precio * cantidad;
+        row.querySelector('.subtotal-input').value = sub.toLocaleString('es-CO');
+        subtotal += sub;
     });
 
-    document.addEventListener('click', e => {
-        if (e.target.classList.contains('btn-remove')) {
-            const rows = container.querySelectorAll('.producto-row');
-            if (rows.length > 1) e.target.closest('.producto-row').remove();
-            actualizarTotales();
-        }
-    });
+    const descuentoTotal = parseFloat(document.getElementById('descuento_manual').value || 0);
+    const costoEnvio     = parseFloat(document.getElementById('costo_envio').value      || 0);
+    const total          = subtotal - descuentoTotal + costoEnvio;
 
-    document.addEventListener('input', actualizarTotales);
+    document.getElementById('subtotal').textContent    = subtotal.toLocaleString('es-CO');
+    document.getElementById('descuento').textContent   = descuentoTotal.toLocaleString('es-CO');
+    document.getElementById('envio_total').textContent = costoEnvio.toLocaleString('es-CO');
+    document.getElementById('total').textContent       = total.toLocaleString('es-CO');
+}
 
-    function actualizarTotales() {
-        let subtotal = 0;
+container.addEventListener('input', recalcular);
+document.getElementById('descuento_manual').addEventListener('input', recalcular);
+document.getElementById('costo_envio').addEventListener('input', recalcular);
 
-        document.querySelectorAll('.producto-row').forEach(row => {
-            const precio = parseFloat(row.querySelector('select').selectedOptions[0]?.text.match(/\$(\d+([.,]\d+)?)/)?.[1].replace('.', '').replace(',', '.') || 0);
-            const cantidad = parseFloat(row.querySelector('input[name="cantidades[]"]').value) || 0;
-            const descuento = parseFloat(row.querySelector('input[name="descuentos[]"]').value) || 0;
-            const sub = (precio * cantidad) - descuento;
-            subtotal += sub;
-
-            const subtotalInput = row.querySelector('.subtotal');
-            subtotalInput.value = `$${sub.toFixed(2)}`;
-        });
-
-        const descuentoTotal = parseFloat(document.getElementById('descuento_manual').value || 0);
-        const costoEnvio = parseFloat(document.getElementById('costo_envio').value || 0);
-        const total = subtotal - descuentoTotal + costoEnvio;
-
-        document.getElementById('subtotal').textContent = subtotal.toLocaleString('es-CO', { minimumFractionDigits: 2 });
-        document.getElementById('descuento').textContent = descuentoTotal.toLocaleString('es-CO', { minimumFractionDigits: 2 });
-        document.getElementById('envio_total').textContent = costoEnvio.toLocaleString('es-CO', { minimumFractionDigits: 2 });
-        document.getElementById('total').textContent = total.toLocaleString('es-CO', { minimumFractionDigits: 2 });
+document.addEventListener('click', e => {
+    if (e.target.classList.contains('btn-remove')) {
+        const rows = container.querySelectorAll('.producto-row');
+        if (rows.length > 1) { e.target.closest('.producto-row').remove(); recalcular(); }
     }
+});
+
+document.getElementById('add-producto').addEventListener('click', () => {
+    const firstRow = container.querySelector('.producto-row');
+    const newRow   = firstRow.cloneNode(true);
+    // Clear variante hidden to 0 and producto hidden to first product
+    newRow.querySelector('input[name="variantes[]"]').value  = '0';
+    newRow.querySelector('input[name="productos[]"]').value  = '{{ $productos->first()?->id ?? 0 }}';
+    newRow.querySelector('.precio-input').value    = '';
+    newRow.querySelector('.cantidad-input').value  = '1';
+    newRow.querySelector('.subtotal-input').value  = '';
+    const label = newRow.querySelector('small');
+    if (label) label.textContent = 'Sin variante — ingresa precio manualmente';
+    container.appendChild(newRow);
+});
+
+recalcular();
 </script>
 @endsection

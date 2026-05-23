@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Venta;
 use App\Models\Producto;
+use App\Models\Variante;
 
 class DetalleVenta extends Model
 {
@@ -16,7 +17,9 @@ class DetalleVenta extends Model
     protected $fillable = [
         'venta_id',
         'producto_id',
+        'variante_id',
         'nombre_producto',
+        'nombre_variante',
         'codigo_producto',
         'cantidad',
         'precio_unitario',
@@ -44,8 +47,15 @@ class DetalleVenta extends Model
      */
     public function producto()
     {
-        // Se incluye withTrashed() solo si el modelo Producto usa SoftDeletes
         return $this->belongsTo(Producto::class, 'producto_id');
+    }
+
+    /**
+     * Relación con variante (nullable si la variante fue eliminada).
+     */
+    public function variante()
+    {
+        return $this->belongsTo(Variante::class, 'variante_id');
     }
 
     /*

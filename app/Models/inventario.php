@@ -11,7 +11,8 @@ class Inventario extends Model
 
     protected $fillable = [
         'producto_id',
-        'tipo', // entrada o salida
+        'variante_id',
+        'tipo',
         'cantidad',
         'descripcion',
     ];
@@ -26,6 +27,11 @@ class Inventario extends Model
     public function producto()
     {
         return $this->belongsTo(\App\Models\Producto::class);
+    }
+
+    public function variante()
+    {
+        return $this->belongsTo(\App\Models\Variante::class);
     }
 
     /**

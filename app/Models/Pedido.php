@@ -32,6 +32,11 @@ class Pedido extends Model
         return $this->belongsTo(Venta::class);
     }
 
+    public function comprobantes()
+    {
+        return $this->hasMany(Comprobante::class);
+    }
+
     // Etiquetas para la UI
     public static function estadosLabel(): array
     {

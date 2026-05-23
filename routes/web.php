@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\VentaController;
 use App\Http\Controllers\DetalleVentaController;
@@ -12,57 +13,67 @@ use App\Http\Controllers\SaborController;
 use App\Http\Controllers\DescuentoController;
 use App\Http\Controllers\DomicilioController;
 use App\Http\Controllers\PedidoController;
+use App\Http\Controllers\InventarioController;
+use App\Http\Controllers\VendedorController;
+use App\Http\Controllers\LiquidacionController;
 use Illuminate\Support\Facades\DB;
 
+// ── Dashboard ──────────────────────────────────────────────────
+Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
-Route::get('/', function () {
-    return view('welcome');
-});
-
+// ── Ventas ─────────────────────────────────────────────────────
 Route::resource('ventas', VentaController::class);
-Route::resource('productos', ProductoController::class);
+Route::get('/ventas/{id}/recibo', [VentaController::class, 'recibo'])->name('ventas.recibo');
+
+// ── Inventario (anidado bajo producto) ─────────────────────────
+Route::get('/productos/{producto}/inventario/create', [InventarioController::class, 'create'])->name('inventarios.create');
+Route::post('/productos/{producto}/inventario',        [InventarioController::class, 'store'])->name('inventarios.store');
+
+// ── Recursos estándar ──────────────────────────────────────────
+Route::resource('productos',     ProductoController::class);
 Route::resource('detalle_ventas', DetalleVentaController::class);
-Route::resource('clientes', ClienteController::class);
-Route::resource('categorias', CategoriaController::class);
-Route::resource('efectos', EfectoController::class);
-Route::resource('descuentos', DescuentoController::class); 
-Route::resource('pedidos', PedidoController::class); 
-Route::resource('domicilios', DomicilioController::class); 
-Route::resource('colores', ColorController::class)->parameters([
-    'colores' => 'color'
-]);
+Route::resource('clientes',      ClienteController::class);
+Route::resource('categorias',    CategoriaController::class);
+Route::resource('efectos',       EfectoController::class);
+Route::resource('descuentos',    DescuentoController::class);
+Route::resource('vendedores', VendedorController::class)->parameters(['vendedores' => 'vendedor']);
+Route::post('vendedores/{vendedor}/liquidaciones', [LiquidacionController::class, 'store'])->name('liquidaciones.store');
+Route::get('vendedores/{vendedor}/liquidaciones/{liquidacion}', [LiquidacionController::class, 'show'])->name('liquidaciones.show');
 
-// routes/web.php
+Route::resource('colores', ColorController::class)->parameters(['colores' => 'color']);
+Route::resource('sabores', SaborController::class)->parameters(['sabores' => 'sabor']);
+
+// ── Domicilios ─────────────────────────────────────────────────
+Route::get('domicilios/mapa', [DomicilioController::class, 'mapa'])->name('domicilios.mapa');
+Route::resource('domicilios', DomicilioController::class);
+
+// ── Pedidos ────────────────────────────────────────────────────
 Route::resource('pedidos', PedidoController::class)->only(['index', 'show']);
-Route::patch('pedidos/{pedido}/estado', [PedidoController::class, 'actualizarEstado'])->name('pedidos.estado');
-Route::patch('pedidos/{pedido}/pago',   [PedidoController::class, 'registrarPago'])->name('pedidos.pago');
+Route::patch('pedidos/{pedido}/estado',   [PedidoController::class, 'actualizarEstado'])->name('pedidos.estado');
+Route::patch('pedidos/{pedido}/pago',     [PedidoController::class, 'registrarPago'])->name('pedidos.pago');
 
-Route::resource('sabores', SaborController::class)->parameters([
-    'sabores' => 'sabor'
-]);
-Route::get('/pivotes', function() {
+// Comprobantes de pago
+Route::post('pedidos/{pedido}/comprobante',
+    [PedidoController::class, 'subirComprobante'])->name('pedidos.comprobante.subir');
+Route::patch('pedidos/{pedido}/comprobante/{comprobante}/verificar',
+    [PedidoController::class, 'verificarComprobante'])->name('pedidos.comprobante.verificar');
+Route::patch('pedidos/{pedido}/comprobante/{comprobante}/rechazar',
+    [PedidoController::class, 'rechazarComprobante'])->name('pedidos.comprobante.rechazar');
 
-    // Traemos todos los productos
-    $productos = DB::table('productos')->get();
-
-    // Traemos los colores con el nombre y el HEX
+// ── Debug pivotes ──────────────────────────────────────────────
+Route::get('/pivotes', function () {
+    $productos        = DB::table('productos')->get();
     $producto_colores = DB::table('producto_color')
         ->join('colores', 'producto_color.color_id', '=', 'colores.id')
         ->select('producto_color.producto_id', 'colores.nombre as color_nombre', 'colores.codigo_hex')
         ->get();
-
-    // Traemos los efectos con el nombre
     $producto_efectos = DB::table('producto_efecto')
         ->join('efectos', 'producto_efecto.efecto_id', '=', 'efectos.id')
         ->select('producto_efecto.producto_id', 'efectos.nombre as efecto_nombre')
         ->get();
-
-    // Traemos los sabores con el nombre
     $producto_sabores = DB::table('producto_sabor')
         ->join('sabores', 'producto_sabor.sabor_id', '=', 'sabores.id')
         ->select('producto_sabor.producto_id', 'sabores.nombre as sabor_nombre')
         ->get();
-
     return view('pivotes.index', compact('productos', 'producto_colores', 'producto_efectos', 'producto_sabores'));
-
 })->name('pivotes.index');

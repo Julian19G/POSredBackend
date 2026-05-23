@@ -17,6 +17,7 @@ class Venta extends Model
      */
     protected $fillable = [
         'cliente_id',
+        'vendedor_id',
         'subtotal',
         'descuento_manual',
         'motivo_descuento',
@@ -97,10 +98,24 @@ class Venta extends Model
         return ucfirst($this->estado);
     }
 
-        public function domicilio()
+    public function vendedor()
+    {
+        return $this->belongsTo(Vendedor::class);
+    }
+
+    public function domicilio()
     {
         return $this->hasOne(Domicilio::class);
     }
 
+    public function pedido()
+    {
+        return $this->hasOne(Pedido::class);
+    }
+
+    public function comision()
+    {
+        return $this->hasOne(Comision::class);
+    }
 }
 

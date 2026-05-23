@@ -13,15 +13,30 @@ use Illuminate\Support\Facades\Storage;
 
 class ProductoController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         Producto::where('stock', '<=', 0)->where('activo', true)->update(['activo' => false]);
         Producto::where('stock', '>', 0)->where('activo', false)->update(['activo' => true]);
 
-        // Cargamos variantes también para mostrarlas en el index
-        $productos = Producto::with(['categoria', 'sabores', 'colores', 'efectos', 'variantes'])->get();
+        $query = Producto::with(['categoria', 'sabores', 'colores', 'efectos', 'variantes']);
 
-        return view('productos.index', compact('productos'));
+        if ($request->filled('buscar')) {
+            $query->where('nombre', 'like', '%' . $request->buscar . '%');
+        }
+        if ($request->filled('categoria_id')) {
+            $query->where('categoria_id', $request->categoria_id);
+        }
+        if ($request->filled('activo') && $request->activo !== '') {
+            $query->where('activo', $request->activo);
+        }
+        if ($request->has('stock_bajo')) {
+            $query->where('stock', '<=', 10);
+        }
+
+        $productos  = $query->paginate(20)->withQueryString();
+        $categorias = Categoria::orderBy('nombre')->get();
+
+        return view('productos.index', compact('productos', 'categorias'));
     }
 
     public function create()
