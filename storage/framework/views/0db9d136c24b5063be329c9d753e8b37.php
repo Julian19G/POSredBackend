@@ -93,7 +93,36 @@
             </ul>
 
             
-            <a href="<?php echo e(route('ventas.create')); ?>" class="btn btn-success btn-sm">➕ Nueva venta</a>
+            <div class="d-flex align-items-center gap-2">
+                <a href="<?php echo e(route('ventas.create')); ?>" class="btn btn-success btn-sm">➕ Nueva venta</a>
+
+                <?php if(auth()->guard()->check()): ?>
+                <div class="dropdown">
+                    <a class="nav-link dropdown-toggle text-white d-flex align-items-center gap-1 px-2"
+                       href="#" role="button" data-bs-toggle="dropdown">
+                        <span><?php echo e(auth()->user()->name); ?></span>
+                        <span class="badge <?php echo e(auth()->user()->isAdmin() ? 'bg-danger' : 'bg-info text-dark'); ?> ms-1" style="font-size:.7rem">
+                            <?php echo e(auth()->user()->role); ?>
+
+                        </span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li class="px-3 py-1">
+                            <small class="text-muted"><?php echo e(auth()->user()->email); ?></small>
+                        </li>
+                        <li><hr class="dropdown-divider my-1"></li>
+                        <li><a class="dropdown-item" href="<?php echo e(route('profile.edit')); ?>">⚙️ Mi perfil</a></li>
+                        <li><hr class="dropdown-divider my-1"></li>
+                        <li>
+                            <form action="<?php echo e(route('logout')); ?>" method="POST">
+                                <?php echo csrf_field(); ?>
+                                <button type="submit" class="dropdown-item text-danger">🚪 Cerrar sesión</button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </nav>

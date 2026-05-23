@@ -92,8 +92,36 @@
 
             </ul>
 
-            {{-- Botón rápido --}}
-            <a href="{{ route('ventas.create') }}" class="btn btn-success btn-sm">➕ Nueva venta</a>
+            {{-- Botón rápido + usuario --}}
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ route('ventas.create') }}" class="btn btn-success btn-sm">➕ Nueva venta</a>
+
+                @auth
+                <div class="dropdown">
+                    <a class="nav-link dropdown-toggle text-white d-flex align-items-center gap-1 px-2"
+                       href="#" role="button" data-bs-toggle="dropdown">
+                        <span>{{ auth()->user()->name }}</span>
+                        <span class="badge {{ auth()->user()->isAdmin() ? 'bg-danger' : 'bg-info text-dark' }} ms-1" style="font-size:.7rem">
+                            {{ auth()->user()->role }}
+                        </span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li class="px-3 py-1">
+                            <small class="text-muted">{{ auth()->user()->email }}</small>
+                        </li>
+                        <li><hr class="dropdown-divider my-1"></li>
+                        <li><a class="dropdown-item" href="{{ route('profile.edit') }}">⚙️ Mi perfil</a></li>
+                        <li><hr class="dropdown-divider my-1"></li>
+                        <li>
+                            <form action="{{ route('logout') }}" method="POST">
+                                @csrf
+                                <button type="submit" class="dropdown-item text-danger">🚪 Cerrar sesión</button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+                @endauth
+            </div>
         </div>
     </div>
 </nav>
