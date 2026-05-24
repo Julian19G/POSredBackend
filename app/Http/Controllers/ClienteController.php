@@ -8,9 +8,21 @@ use Illuminate\Http\Request;
 
 class ClienteController extends Controller
 {
+    private function miVendedorId(): ?int
+    {
+        if (auth()->user()->isAdmin()) return null;
+        return auth()->user()->vendedor?->id;
+    }
+
     public function index(Request $request)
     {
         $query = Cliente::with('referidoPor');
+
+        // Vendedores solo ven clientes con los que han tenido ventas
+        $vid = $this->miVendedorId();
+        if ($vid !== null) {
+            $query->whereHas('ventas', fn($q) => $q->where('vendedor_id', $vid));
+        }
 
         if ($request->filled('buscar')) {
             $b = $request->buscar;
@@ -58,13 +70,19 @@ class ClienteController extends Controller
     public function show(string $id)
     {
         $cliente = Cliente::with(['referidoPor', 'referidos'])->findOrFail($id);
-        $ventas  = Venta::with('pedido')
-                    ->where('cliente_id', $id)
-                    ->latest()
-                    ->paginate(10, ['*'], 'ventas_page');
 
-        $totalGastado = Venta::where('cliente_id', $id)->where('estado', '!=', 'cancelada')->sum('total');
-        $pendientes   = Venta::where('cliente_id', $id)->where('estado', 'pendiente')->count();
+        // Vendedores solo pueden ver clientes con los que han tenido ventas
+        $vid = $this->miVendedorId();
+        if ($vid !== null && !Venta::where('cliente_id', $id)->where('vendedor_id', $vid)->exists()) {
+            abort(403, 'No tienes acceso a este cliente.');
+        }
+
+        $baseQuery = fn() => Venta::where('cliente_id', $id)
+            ->when($vid, fn($q) => $q->where('vendedor_id', $vid));
+
+        $ventas       = $baseQuery()->with('pedido')->latest()->paginate(10, ['*'], 'ventas_page');
+        $totalGastado = $baseQuery()->where('estado', '!=', 'cancelada')->sum('total');
+        $pendientes   = $baseQuery()->where('estado', 'pendiente')->count();
 
         return view('clientes.show', compact('cliente', 'ventas', 'totalGastado', 'pendientes'));
     }
@@ -102,6 +120,7 @@ class ClienteController extends Controller
 
     public function destroy(string $id)
     {
+        abort_if(!auth()->user()->isAdmin(), 403, 'Solo el administrador puede eliminar clientes.');
         $cliente = Cliente::findOrFail($id);
         $cliente->delete();
         return redirect()->route('clientes.index')

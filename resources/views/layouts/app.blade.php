@@ -50,20 +50,13 @@
                     </a>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="{{ route('productos.index') }}">📦 Productos</a></li>
-                        <li><a class="dropdown-item" href="{{ route('productos.index', ['stock_bajo' => 1]) }}">⚠ Stock bajo</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="{{ route('categorias.index') }}">🗂 Categorías</a></li>
-                    </ul>
-                </li>
-
-                {{-- Dropdown: Equipo --}}
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle {{ request()->routeIs('vendedores.*') ? 'active fw-semibold' : '' }}"
-                       href="#" role="button" data-bs-toggle="dropdown">
-                        Equipo
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{{ route('vendedores.index') }}">👥 Vendedores</a></li>
+                        @auth
+                        @if(auth()->user()->isAdmin())
+                            <li><a class="dropdown-item" href="{{ route('productos.index', ['stock_bajo' => 1]) }}">⚠ Stock bajo</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ route('categorias.index') }}">🗂 Categorías</a></li>
+                        @endif
+                        @endauth
                     </ul>
                 </li>
 
@@ -79,7 +72,20 @@
                     </ul>
                 </li>
 
-                {{-- Dropdown: Config --}}
+                {{-- Equipo y Config: solo admins --}}
+                @auth
+                @if(auth()->user()->isAdmin())
+
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle {{ request()->routeIs('vendedores.*') ? 'active fw-semibold' : '' }}"
+                       href="#" role="button" data-bs-toggle="dropdown">
+                        Equipo
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ route('vendedores.index') }}">👥 Vendedores</a></li>
+                    </ul>
+                </li>
+
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle {{ request()->routeIs('descuentos.*') ? 'active fw-semibold' : '' }}"
                        href="#" role="button" data-bs-toggle="dropdown">
@@ -90,6 +96,9 @@
                         <li><a class="dropdown-item" href="{{ route('categorias.index') }}">🗂 Categorías</a></li>
                     </ul>
                 </li>
+
+                @endif
+                @endauth
 
                 {{-- Dropdown: Admin (solo admins) --}}
                 @auth

@@ -15,10 +15,19 @@ class ProductoController extends Controller
 {
     public function index(Request $request)
     {
-        Producto::where('stock', '<=', 0)->where('activo', true)->update(['activo' => false]);
-        Producto::where('stock', '>', 0)->where('activo', false)->update(['activo' => true]);
+        $esAdmin = auth()->user()->isAdmin();
+
+        if ($esAdmin) {
+            Producto::where('stock', '<=', 0)->where('activo', true)->update(['activo' => false]);
+            Producto::where('stock', '>', 0)->where('activo', false)->update(['activo' => true]);
+        }
 
         $query = Producto::with(['categoria', 'sabores', 'colores', 'efectos', 'variantes']);
+
+        // Vendedores solo ven productos activos
+        if (!$esAdmin) {
+            $query->where('activo', true);
+        }
 
         if ($request->filled('buscar')) {
             $query->where('nombre', 'like', '%' . $request->buscar . '%');
@@ -26,21 +35,22 @@ class ProductoController extends Controller
         if ($request->filled('categoria_id')) {
             $query->where('categoria_id', $request->categoria_id);
         }
-        if ($request->filled('activo') && $request->activo !== '') {
+        if ($esAdmin && $request->filled('activo') && $request->activo !== '') {
             $query->where('activo', $request->activo);
         }
-        if ($request->has('stock_bajo')) {
+        if ($esAdmin && $request->has('stock_bajo')) {
             $query->where('stock', '<=', 10);
         }
 
         $productos  = $query->paginate(20)->withQueryString();
         $categorias = Categoria::orderBy('nombre')->get();
 
-        return view('productos.index', compact('productos', 'categorias'));
+        return view('productos.index', compact('productos', 'categorias', 'esAdmin'));
     }
 
     public function create()
     {
+        abort_if(!auth()->user()->isAdmin(), 403, 'Solo el administrador puede crear productos.');
         $categorias = Categoria::all();
         $sabores    = Sabor::all();
         $efectos    = Efecto::all();
@@ -51,6 +61,7 @@ class ProductoController extends Controller
 
     public function store(Request $request)
     {
+        abort_if(!auth()->user()->isAdmin(), 403, 'Solo el administrador puede crear productos.');
         $request->validate([
             'nombre'       => 'required|string|max:255',
             'descripcion'  => 'nullable|string',
@@ -114,6 +125,7 @@ class ProductoController extends Controller
 
     public function edit(Producto $producto)
     {
+        abort_if(!auth()->user()->isAdmin(), 403, 'Solo el administrador puede editar productos.');
         $categorias = Categoria::all();
         $sabores    = Sabor::all();
         $efectos    = Efecto::all();
@@ -128,6 +140,7 @@ class ProductoController extends Controller
 
     public function update(Request $request, Producto $producto)
     {
+        abort_if(!auth()->user()->isAdmin(), 403, 'Solo el administrador puede editar productos.');
         $request->validate([
             'nombre'       => 'required|string|max:255',
             'descripcion'  => 'nullable|string',
@@ -207,6 +220,7 @@ class ProductoController extends Controller
 
     public function destroy(Producto $producto)
     {
+        abort_if(!auth()->user()->isAdmin(), 403, 'Solo el administrador puede eliminar productos.');
         if ($producto->imagen && Storage::disk('public')->exists($producto->imagen)) {
             Storage::disk('public')->delete($producto->imagen);
         }

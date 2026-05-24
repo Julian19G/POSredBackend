@@ -252,11 +252,11 @@
                 </div>
 
                 @if(!in_array($pedido->estado, ['entregado','cancelado']))
-                <form action="{{ route('pedidos.estado', $pedido->id) }}" method="POST">
+                <form id="form-estado" action="{{ route('pedidos.estado', $pedido->id) }}" method="POST">
                     @csrf @method('PATCH')
                     <div class="mb-2">
                         <label class="form-label small fw-semibold">Cambiar estado</label>
-                        <select name="estado" class="form-select form-select-sm">
+                        <select id="select-estado" name="estado" class="form-select form-select-sm">
                             @foreach(\App\Models\Pedido::estadosLabel() as $val => $info)
                                 <option value="{{ $val }}" {{ $pedido->estado === $val ? 'selected' : '' }}>
                                     {{ $info['label'] }}
@@ -268,11 +268,12 @@
                         <label class="form-label small fw-semibold">Notas internas</label>
                         <textarea name="notas" class="form-control form-control-sm" rows="2">{{ $pedido->notas }}</textarea>
                     </div>
-                    <button class="btn btn-primary btn-sm w-100">Actualizar estado</button>
+                    <button id="btn-estado" class="btn btn-primary btn-sm w-100">Actualizar estado</button>
                 </form>
                 @else
-                    <div class="alert alert-{{ $pedido->estado === 'entregado' ? 'success' : 'danger' }} mb-0 py-2 small">
-                        Pedido {{ $pedido->estado === 'entregado' ? 'entregado ✅' : 'cancelado ❌' }}
+                    <div class="p-3 rounded-3 text-center small fw-semibold
+                        {{ $pedido->estado === 'entregado' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger' }}">
+                        {{ $pedido->estado === 'entregado' ? '✅ Entregado el ' . $pedido->fecha_entrega?->format('d/m/Y H:i') : '❌ Cancelado' }}
                     </div>
                 @endif
             </div>
@@ -337,3 +338,97 @@
 </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    var formEstado = document.getElementById('form-estado');
+    if (!formEstado) return;
+
+    var yaPagado = {{ $pedido->estado_pago === 'pagado' ? 'true' : 'false' }};
+    var totalVenta = {{ $pedido->venta->total }};
+
+    var metodosHtml =
+        '<option value="">Seleccione…</option>' +
+        '<option value="efectivo">💵 Efectivo</option>' +
+        '<option value="transferencia">🏦 Transferencia</option>' +
+        '<option value="cripto">🪙 Cripto</option>' +
+        '<option value="tarjeta">💳 Tarjeta</option>' +
+        '<option value="otro">🔄 Otro</option>';
+
+    function addHidden(form, name, value) {
+        var inp = document.createElement('input');
+        inp.type = 'hidden'; inp.name = name; inp.value = value;
+        form.appendChild(inp);
+    }
+
+    formEstado.addEventListener('submit', function (e) {
+        var estado = document.getElementById('select-estado').value;
+        if (estado !== 'entregado') return; // otros estados pasan directo
+
+        e.preventDefault();
+
+        if (yaPagado) {
+            // Pago ya confirmado → solo pedir confirmación simple
+            Swal.fire({
+                icon: 'question',
+                title: '📦 Confirmar entrega',
+                html: '<p class="mb-0">El pago ya fue registrado. ¿Marcar el pedido como <strong>Entregado</strong>?</p>',
+                showCancelButton: true,
+                confirmButtonText: '✅ Sí, entregado',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#198754',
+                cancelButtonColor: '#6c757d',
+            }).then(function (r) {
+                if (r.isConfirmed) formEstado.submit();
+            });
+
+        } else {
+            // Sin pago → pedir método de pago antes de cerrar
+            Swal.fire({
+                title: '📦 Confirmar entrega y cobro',
+                html:
+                    '<p class="text-muted small mb-3">Para finalizar confirma cómo recibiste el pago.</p>' +
+                    '<div class="mb-3 text-start">' +
+                        '<label class="form-label small fw-semibold">Método de pago <span class="text-danger">*</span></label>' +
+                        '<select id="swal-metodo" class="form-select form-select-sm">' + metodosHtml + '</select>' +
+                    '</div>' +
+                    '<div class="mb-3 text-start">' +
+                        '<label class="form-label small fw-semibold">Monto recibido</label>' +
+                        '<input id="swal-monto" type="number" class="form-control form-control-sm" value="' + totalVenta + '" min="0" step="1000">' +
+                    '</div>' +
+                    '<div class="text-start">' +
+                        '<label class="form-label small fw-semibold">Referencia / N° transacción <span class="text-muted">(opcional)</span></label>' +
+                        '<input id="swal-ref" type="text" class="form-control form-control-sm" placeholder="Nro. transferencia, recibo, etc.">' +
+                    '</div>',
+                showCancelButton: true,
+                confirmButtonText: '✅ Confirmar entrega',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#198754',
+                cancelButtonColor: '#6c757d',
+                focusConfirm: false,
+                preConfirm: function () {
+                    var metodo = document.getElementById('swal-metodo').value;
+                    if (!metodo) {
+                        Swal.showValidationMessage('Selecciona el método de pago');
+                        return false;
+                    }
+                    return {
+                        metodo:     metodo,
+                        monto:      document.getElementById('swal-monto').value,
+                        referencia: document.getElementById('swal-ref').value,
+                    };
+                },
+            }).then(function (r) {
+                if (r.isConfirmed) {
+                    addHidden(formEstado, 'metodo_pago',     r.value.metodo);
+                    addHidden(formEstado, 'monto_pago',      r.value.monto);
+                    addHidden(formEstado, 'referencia_pago', r.value.referencia);
+                    formEstado.submit();
+                }
+            });
+        }
+    });
+})();
+</script>
+@endpush

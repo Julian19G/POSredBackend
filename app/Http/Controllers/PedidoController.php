@@ -14,12 +14,31 @@ use Illuminate\Support\Facades\Storage;
 
 class PedidoController extends Controller
 {
+    private function miVendedorId(): ?int
+    {
+        if (auth()->user()->isAdmin()) return null;
+        return auth()->user()->vendedor?->id;
+    }
+
+    private function verificarAccesoPedido(Pedido $pedido): void
+    {
+        $vid = $this->miVendedorId();
+        if ($vid !== null && $pedido->venta?->vendedor_id !== $vid) {
+            abort(403, 'No tienes acceso a este pedido.');
+        }
+    }
+
     public function index()
     {
-        $pedidos = Pedido::with(['venta.cliente', 'venta.detalles.producto', 'venta.domicilio'])
-            ->latest()
-            ->paginate(15);
+        $query = Pedido::with(['venta.cliente', 'venta.detalles.producto', 'venta.domicilio'])
+            ->latest();
 
+        $vid = $this->miVendedorId();
+        if ($vid !== null) {
+            $query->whereHas('venta', fn($q) => $q->where('vendedor_id', $vid));
+        }
+
+        $pedidos      = $query->paginate(15);
         $estadosLabel = Pedido::estadosLabel();
 
         return view('pedidos.index', compact('pedidos', 'estadosLabel'));
@@ -36,6 +55,8 @@ class PedidoController extends Controller
             'comprobantes',
         ])->findOrFail($id);
 
+        $this->verificarAccesoPedido($pedido);
+
         return view('pedidos.show', compact('pedido'));
     }
 
@@ -45,18 +66,29 @@ class PedidoController extends Controller
     public function actualizarEstado(Request $request, $id)
     {
         $request->validate([
-            'estado'      => 'required|in:nuevo,en_preparacion,despachado,entregado,cancelado',
-            'metodo_pago' => 'nullable|in:efectivo,transferencia,cripto,tarjeta,otro',
-            'notas'       => 'nullable|string|max:500',
+            'estado'          => 'required|in:nuevo,en_preparacion,despachado,entregado,cancelado',
+            'metodo_pago'     => 'nullable|in:efectivo,transferencia,cripto,tarjeta,otro',
+            'monto_pago'      => 'nullable|numeric|min:0',
+            'referencia_pago' => 'nullable|string|max:255',
+            'notas'           => 'nullable|string|max:500',
         ]);
 
-        $pedido = Pedido::with('venta.domicilio')->findOrFail($id);
+        $pedido = Pedido::with('venta.domicilio', 'venta.pagos')->findOrFail($id);
+        $this->verificarAccesoPedido($pedido);
+
+        // — Validar: "entregado" requiere pago confirmado —
+        if ($request->estado === 'entregado' && $pedido->estado_pago !== 'pagado') {
+            if (!$request->filled('metodo_pago')) {
+                return back()->withErrors([
+                    'error' => 'No puedes marcar el pedido como entregado sin confirmar el método de pago.',
+                ]);
+            }
+        }
 
         DB::transaction(function () use ($pedido, $request) {
 
             $nuevoEstado = $request->estado;
 
-            // — Timestamps automáticos según estado —
             match ($nuevoEstado) {
                 'en_preparacion' => $pedido->fecha_preparacion = now(),
                 'despachado'     => $pedido->fecha_despacho    = now(),
@@ -70,35 +102,43 @@ class PedidoController extends Controller
             if ($request->filled('metodo_pago')) {
                 $pedido->metodo_pago = $request->metodo_pago;
             }
-
             if ($request->filled('notas')) {
                 $pedido->notas = $request->notas;
             }
 
             $pedido->save();
 
-            // — Sincronizar estado de la VENTA —
-            $estadoVenta = match ($nuevoEstado) {
-                'entregado' => 'pagada',
-                'cancelado' => 'cancelada',
-                default     => 'pendiente',
-            };
-            $pedido->venta->update(['estado' => $estadoVenta]);
-
-            // — Sincronizar estado_pago del pedido si se entregó —
+            // — Al entregar: registrar pago si aún no hay uno confirmado —
             if ($nuevoEstado === 'entregado') {
-                $pedido->update(['estado_pago' => 'pagado']);
-            }
+                $yaTienePago = $pedido->venta->pagos->where('estado', 'confirmado')->isNotEmpty();
 
-            // — Anular comisión si el pedido se cancela —
-            if ($nuevoEstado === 'cancelado') {
+                if (!$yaTienePago && $request->filled('metodo_pago')) {
+                    Pago::create([
+                        'venta_id'       => $pedido->venta_id,
+                        'registrado_por' => auth()->id(),
+                        'monto'          => $request->filled('monto_pago')
+                                             ? (float) $request->monto_pago
+                                             : $pedido->venta->total,
+                        'metodo'         => $request->metodo_pago,
+                        'estado'         => 'confirmado',
+                        'fecha_pago'     => now(),
+                        'referencia'     => $request->referencia_pago,
+                    ]);
+                }
+
+                $pedido->update(['estado_pago' => 'pagado']);
+                $pedido->venta->update(['estado' => 'pagada']);
+            } elseif ($nuevoEstado === 'cancelado') {
+                $pedido->venta->update(['estado' => 'cancelada']);
+
                 $comision = $pedido->venta->comision;
                 if ($comision && $comision->estado === 'pendiente') {
                     $comision->update(['estado' => 'anulada']);
                 }
+            } else {
+                $pedido->venta->update(['estado' => 'pendiente']);
             }
 
-            // — Sincronizar estado del DOMICILIO (si existe) —
             if ($pedido->venta->domicilio) {
                 $estadoDomicilio = match ($nuevoEstado) {
                     'despachado' => 'enviado',
@@ -106,7 +146,6 @@ class PedidoController extends Controller
                     'cancelado'  => 'cancelado',
                     default      => $pedido->venta->domicilio->estado,
                 };
-
                 $pedido->venta->domicilio->update(['estado' => $estadoDomicilio]);
             }
         });
@@ -126,6 +165,7 @@ class PedidoController extends Controller
         ]);
 
         $pedido = Pedido::with('venta')->findOrFail($id);
+        $this->verificarAccesoPedido($pedido);
 
         DB::transaction(function () use ($pedido, $request) {
             $monto = $request->filled('monto') ? (float) $request->monto : $pedido->venta->total;
@@ -164,7 +204,8 @@ class PedidoController extends Controller
             'notas'      => 'nullable|string|max:500',
         ]);
 
-        $pedido = Pedido::findOrFail($id);
+        $pedido = Pedido::with('venta')->findOrFail($id);
+        $this->verificarAccesoPedido($pedido);
 
         $data = [
             'pedido_id'  => $pedido->id,
@@ -190,6 +231,7 @@ class PedidoController extends Controller
      */
     public function verificarComprobante(Request $request, $pedidoId, $comprobanteId)
     {
+        abort_if(!auth()->user()->isAdmin(), 403, 'Solo el administrador puede verificar comprobantes.');
         $pedido      = Pedido::findOrFail($pedidoId);
         $comprobante = Comprobante::where('pedido_id', $pedido->id)->findOrFail($comprobanteId);
 
@@ -227,6 +269,7 @@ class PedidoController extends Controller
      */
     public function rechazarComprobante(Request $request, $pedidoId, $comprobanteId)
     {
+        abort_if(!auth()->user()->isAdmin(), 403, 'Solo el administrador puede rechazar comprobantes.');
         $pedido      = Pedido::findOrFail($pedidoId);
         $comprobante = Comprobante::where('pedido_id', $pedido->id)->findOrFail($comprobanteId);
 

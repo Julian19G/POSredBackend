@@ -107,12 +107,14 @@
                     <td>
                         <a href="<?php echo e(route('ventas.show', $venta->id)); ?>" class="btn btn-sm btn-info">Ver</a>
                         <a href="<?php echo e(route('ventas.recibo', $venta->id)); ?>" class="btn btn-sm btn-outline-secondary" target="_blank">🖨</a>
-                        <a href="<?php echo e(route('ventas.edit', $venta->id)); ?>" class="btn btn-sm btn-warning">Editar</a>
-                        <form action="<?php echo e(route('ventas.destroy', $venta->id)); ?>" method="POST" class="d-inline">
-                            <?php echo csrf_field(); ?> <?php echo method_field('DELETE'); ?>
-                            <button class="btn btn-sm btn-danger"
-                                data-confirm="Esta acción eliminará la venta permanentemente.">🗑</button>
-                        </form>
+                        <?php if(auth()->user()->isAdmin()): ?>
+                            <a href="<?php echo e(route('ventas.edit', $venta->id)); ?>" class="btn btn-sm btn-warning">Editar</a>
+                            <form action="<?php echo e(route('ventas.destroy', $venta->id)); ?>" method="POST" class="d-inline">
+                                <?php echo csrf_field(); ?> <?php echo method_field('DELETE'); ?>
+                                <button class="btn btn-sm btn-danger"
+                                    data-confirm="Esta acción eliminará la venta permanentemente.">🗑</button>
+                            </form>
+                        <?php endif; ?>
                     </td>
                 </tr>
             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>

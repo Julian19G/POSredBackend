@@ -19,9 +19,30 @@ use Illuminate\Validation\ValidationException;
 
 class VentaController extends Controller
 {
+    // Retorna el vendedor_id del usuario actual, o null si es admin
+    private function miVendedorId(): ?int
+    {
+        if (auth()->user()->isAdmin()) return null;
+        return auth()->user()->vendedor?->id;
+    }
+
+    private function verificarAccesoVenta(Venta $venta): void
+    {
+        $vid = $this->miVendedorId();
+        if ($vid !== null && $venta->vendedor_id !== $vid) {
+            abort(403, 'No tienes acceso a esta venta.');
+        }
+    }
+
     public function index(\Illuminate\Http\Request $request)
     {
         $query = Venta::with(['cliente', 'vendedor', 'detalles'])->latest();
+
+        // Vendedores solo ven sus propias ventas
+        $vid = $this->miVendedorId();
+        if ($vid !== null) {
+            $query->where('vendedor_id', $vid);
+        }
 
         if ($request->filled('estado')) {
             $query->where('estado', $request->estado);
@@ -183,17 +204,20 @@ class VentaController extends Controller
             'pedido.comprobantes',
             'pagos.registradoPor',
         ])->findOrFail($id);
+        $this->verificarAccesoVenta($venta);
         return view('ventas.show', compact('venta'));
     }
 
     public function recibo($id)
     {
         $venta = Venta::with(['cliente', 'detalles.variante.producto', 'domicilio', 'pedido'])->findOrFail($id);
+        $this->verificarAccesoVenta($venta);
         return view('ventas.recibo', compact('venta'));
     }
 
     public function edit($id)
     {
+        abort_if(!auth()->user()->isAdmin(), 403, 'Solo el administrador puede editar ventas.');
         return view('ventas.edit', [
             'venta'      => Venta::with('detalles.variante.producto')->findOrFail($id),
             'productos'  => Producto::with('variantes')->where('activo', true)->get(),
@@ -204,6 +228,7 @@ class VentaController extends Controller
 
     public function update(Request $request, $id)
     {
+        abort_if(!auth()->user()->isAdmin(), 403, 'Solo el administrador puede editar ventas.');
         $venta = Venta::findOrFail($id);
 
         $request->validate([
@@ -269,6 +294,7 @@ class VentaController extends Controller
 
     public function destroy($id)
     {
+        abort_if(!auth()->user()->isAdmin(), 403, 'Solo el administrador puede eliminar ventas.');
         $venta = Venta::findOrFail($id);
 
         DB::beginTransaction();

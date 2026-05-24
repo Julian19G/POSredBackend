@@ -12,7 +12,9 @@
 
     <div class="d-flex justify-content-between align-items-center mb-3 mt-3">
         <h1 class="mb-0">Productos</h1>
-        <a href="{{ route('productos.create') }}" class="btn btn-primary">➕ Nuevo Producto</a>
+        @if($esAdmin)
+            <a href="{{ route('productos.create') }}" class="btn btn-primary">➕ Nuevo Producto</a>
+        @endif
     </div>
 
     {{-- FILTROS --}}
@@ -35,6 +37,7 @@
                         @endforeach
                     </select>
                 </div>
+                @if($esAdmin)
                 <div class="col-md-2">
                     <label class="form-label small mb-1">Estado</label>
                     <select name="activo" class="form-select form-select-sm">
@@ -52,6 +55,12 @@
                     <button type="submit" class="btn btn-sm btn-primary">Filtrar</button>
                     <a href="{{ route('productos.index') }}" class="btn btn-sm btn-outline-secondary">✕</a>
                 </div>
+                @else
+                <div class="col-md-5 d-flex gap-2 align-items-end">
+                    <button type="submit" class="btn btn-sm btn-primary">Filtrar</button>
+                    <a href="{{ route('productos.index') }}" class="btn btn-sm btn-outline-secondary">✕</a>
+                </div>
+                @endif
             </div>
         </div>
     </form>
@@ -115,13 +124,15 @@
                     </td>
                     <td>
                         <a href="{{ route('productos.show', $producto) }}" class="btn btn-info btn-sm">Ver</a>
-                        <a href="{{ route('inventarios.create', $producto) }}" class="btn btn-sm btn-outline-success" title="Agregar stock">+Stock</a>
-                        <a href="{{ route('productos.edit', $producto) }}" class="btn btn-warning btn-sm">Editar</a>
-                        <form action="{{ route('productos.destroy', $producto) }}" method="POST" class="d-inline">
-                            @csrf @method('DELETE')
-                            <button type="submit" class="btn btn-danger btn-sm"
-                                    data-confirm="Se eliminará este producto permanentemente.">Eliminar</button>
-                        </form>
+                        @if($esAdmin)
+                            <a href="{{ route('inventarios.create', $producto) }}" class="btn btn-sm btn-outline-success" title="Agregar stock">+Stock</a>
+                            <a href="{{ route('productos.edit', $producto) }}" class="btn btn-warning btn-sm">Editar</a>
+                            <form action="{{ route('productos.destroy', $producto) }}" method="POST" class="d-inline">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="btn btn-danger btn-sm"
+                                        data-confirm="Se eliminará este producto permanentemente.">Eliminar</button>
+                            </form>
+                        @endif
                     </td>
                 </tr>
                 @empty

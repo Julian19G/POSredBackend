@@ -49,11 +49,13 @@
                     <td class="text-center">
                         <a href="{{ route('clientes.show', $cliente) }}" class="btn btn-sm btn-info">Ver</a>
                         <a href="{{ route('clientes.edit', $cliente) }}" class="btn btn-sm btn-warning">Editar</a>
-                        <form action="{{ route('clientes.destroy', $cliente) }}" method="POST" class="d-inline">
-                            @csrf @method('DELETE')
-                            <button class="btn btn-sm btn-danger"
-                                    data-confirm="Se eliminará el cliente permanentemente.">Eliminar</button>
-                        </form>
+                        @if(auth()->user()->isAdmin())
+                            <form action="{{ route('clientes.destroy', $cliente) }}" method="POST" class="d-inline">
+                                @csrf @method('DELETE')
+                                <button class="btn btn-sm btn-danger"
+                                        data-confirm="Se eliminará el cliente permanentemente.">Eliminar</button>
+                            </form>
+                        @endif
                     </td>
                 </tr>
                 @empty

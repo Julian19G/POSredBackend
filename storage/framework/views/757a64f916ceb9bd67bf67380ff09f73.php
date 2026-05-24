@@ -258,11 +258,11 @@
                 </div>
 
                 <?php if(!in_array($pedido->estado, ['entregado','cancelado'])): ?>
-                <form action="<?php echo e(route('pedidos.estado', $pedido->id)); ?>" method="POST">
+                <form id="form-estado" action="<?php echo e(route('pedidos.estado', $pedido->id)); ?>" method="POST">
                     <?php echo csrf_field(); ?> <?php echo method_field('PATCH'); ?>
                     <div class="mb-2">
                         <label class="form-label small fw-semibold">Cambiar estado</label>
-                        <select name="estado" class="form-select form-select-sm">
+                        <select id="select-estado" name="estado" class="form-select form-select-sm">
                             <?php $__currentLoopData = \App\Models\Pedido::estadosLabel(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $val => $info): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                 <option value="<?php echo e($val); ?>" <?php echo e($pedido->estado === $val ? 'selected' : ''); ?>>
                                     <?php echo e($info['label']); ?>
@@ -275,11 +275,12 @@
                         <label class="form-label small fw-semibold">Notas internas</label>
                         <textarea name="notas" class="form-control form-control-sm" rows="2"><?php echo e($pedido->notas); ?></textarea>
                     </div>
-                    <button class="btn btn-primary btn-sm w-100">Actualizar estado</button>
+                    <button id="btn-estado" class="btn btn-primary btn-sm w-100">Actualizar estado</button>
                 </form>
                 <?php else: ?>
-                    <div class="alert alert-<?php echo e($pedido->estado === 'entregado' ? 'success' : 'danger'); ?> mb-0 py-2 small">
-                        Pedido <?php echo e($pedido->estado === 'entregado' ? 'entregado ✅' : 'cancelado ❌'); ?>
+                    <div class="p-3 rounded-3 text-center small fw-semibold
+                        <?php echo e($pedido->estado === 'entregado' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'); ?>">
+                        <?php echo e($pedido->estado === 'entregado' ? '✅ Entregado el ' . $pedido->fecha_entrega?->format('d/m/Y H:i') : '❌ Cancelado'); ?>
 
                     </div>
                 <?php endif; ?>
@@ -348,5 +349,99 @@
 </div>
 </div>
 <?php $__env->stopSection(); ?>
+
+<?php $__env->startPush('scripts'); ?>
+<script>
+(function () {
+    var formEstado = document.getElementById('form-estado');
+    if (!formEstado) return;
+
+    var yaPagado = <?php echo e($pedido->estado_pago === 'pagado' ? 'true' : 'false'); ?>;
+    var totalVenta = <?php echo e($pedido->venta->total); ?>;
+
+    var metodosHtml =
+        '<option value="">Seleccione…</option>' +
+        '<option value="efectivo">💵 Efectivo</option>' +
+        '<option value="transferencia">🏦 Transferencia</option>' +
+        '<option value="cripto">🪙 Cripto</option>' +
+        '<option value="tarjeta">💳 Tarjeta</option>' +
+        '<option value="otro">🔄 Otro</option>';
+
+    function addHidden(form, name, value) {
+        var inp = document.createElement('input');
+        inp.type = 'hidden'; inp.name = name; inp.value = value;
+        form.appendChild(inp);
+    }
+
+    formEstado.addEventListener('submit', function (e) {
+        var estado = document.getElementById('select-estado').value;
+        if (estado !== 'entregado') return; // otros estados pasan directo
+
+        e.preventDefault();
+
+        if (yaPagado) {
+            // Pago ya confirmado → solo pedir confirmación simple
+            Swal.fire({
+                icon: 'question',
+                title: '📦 Confirmar entrega',
+                html: '<p class="mb-0">El pago ya fue registrado. ¿Marcar el pedido como <strong>Entregado</strong>?</p>',
+                showCancelButton: true,
+                confirmButtonText: '✅ Sí, entregado',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#198754',
+                cancelButtonColor: '#6c757d',
+            }).then(function (r) {
+                if (r.isConfirmed) formEstado.submit();
+            });
+
+        } else {
+            // Sin pago → pedir método de pago antes de cerrar
+            Swal.fire({
+                title: '📦 Confirmar entrega y cobro',
+                html:
+                    '<p class="text-muted small mb-3">Para finalizar confirma cómo recibiste el pago.</p>' +
+                    '<div class="mb-3 text-start">' +
+                        '<label class="form-label small fw-semibold">Método de pago <span class="text-danger">*</span></label>' +
+                        '<select id="swal-metodo" class="form-select form-select-sm">' + metodosHtml + '</select>' +
+                    '</div>' +
+                    '<div class="mb-3 text-start">' +
+                        '<label class="form-label small fw-semibold">Monto recibido</label>' +
+                        '<input id="swal-monto" type="number" class="form-control form-control-sm" value="' + totalVenta + '" min="0" step="1000">' +
+                    '</div>' +
+                    '<div class="text-start">' +
+                        '<label class="form-label small fw-semibold">Referencia / N° transacción <span class="text-muted">(opcional)</span></label>' +
+                        '<input id="swal-ref" type="text" class="form-control form-control-sm" placeholder="Nro. transferencia, recibo, etc.">' +
+                    '</div>',
+                showCancelButton: true,
+                confirmButtonText: '✅ Confirmar entrega',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#198754',
+                cancelButtonColor: '#6c757d',
+                focusConfirm: false,
+                preConfirm: function () {
+                    var metodo = document.getElementById('swal-metodo').value;
+                    if (!metodo) {
+                        Swal.showValidationMessage('Selecciona el método de pago');
+                        return false;
+                    }
+                    return {
+                        metodo:     metodo,
+                        monto:      document.getElementById('swal-monto').value,
+                        referencia: document.getElementById('swal-ref').value,
+                    };
+                },
+            }).then(function (r) {
+                if (r.isConfirmed) {
+                    addHidden(formEstado, 'metodo_pago',     r.value.metodo);
+                    addHidden(formEstado, 'monto_pago',      r.value.monto);
+                    addHidden(formEstado, 'referencia_pago', r.value.referencia);
+                    formEstado.submit();
+                }
+            });
+        }
+    });
+})();
+</script>
+<?php $__env->stopPush(); ?>
 
 <?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\Usuario\Documents\My Web Sites\POS\Backend\POSRed\resources\views/pedidos/show.blade.php ENDPATH**/ ?>

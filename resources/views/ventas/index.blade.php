@@ -107,12 +107,14 @@
                     <td>
                         <a href="{{ route('ventas.show', $venta->id) }}" class="btn btn-sm btn-info">Ver</a>
                         <a href="{{ route('ventas.recibo', $venta->id) }}" class="btn btn-sm btn-outline-secondary" target="_blank">🖨</a>
-                        <a href="{{ route('ventas.edit', $venta->id) }}" class="btn btn-sm btn-warning">Editar</a>
-                        <form action="{{ route('ventas.destroy', $venta->id) }}" method="POST" class="d-inline">
-                            @csrf @method('DELETE')
-                            <button class="btn btn-sm btn-danger"
-                                data-confirm="Esta acción eliminará la venta permanentemente.">🗑</button>
-                        </form>
+                        @if(auth()->user()->isAdmin())
+                            <a href="{{ route('ventas.edit', $venta->id) }}" class="btn btn-sm btn-warning">Editar</a>
+                            <form action="{{ route('ventas.destroy', $venta->id) }}" method="POST" class="d-inline">
+                                @csrf @method('DELETE')
+                                <button class="btn btn-sm btn-danger"
+                                    data-confirm="Esta acción eliminará la venta permanentemente.">🗑</button>
+                            </form>
+                        @endif
                     </td>
                 </tr>
             @empty

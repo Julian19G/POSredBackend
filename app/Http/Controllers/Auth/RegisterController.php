@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Vendedor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -32,6 +33,17 @@ class RegisterController extends Controller
             'password' => Hash::make($request->password),
             'role'     => $role,
         ]);
+
+        // Los vendedores obtienen automáticamente su perfil de vendedor
+        if ($role === 'vendedor') {
+            Vendedor::create([
+                'user_id'             => $user->id,
+                'nombre'              => $request->name,
+                'email'               => $request->email,
+                'activo'              => true,
+                'comision_porcentaje' => 0,
+            ]);
+        }
 
         Auth::login($user);
 
