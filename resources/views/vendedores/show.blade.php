@@ -169,7 +169,9 @@
                             </div>
 
                             <button type="submit" class="btn btn-success btn-sm w-100"
-                                    onclick="return confirm('¿Registrar pago de comisiones seleccionadas?')">
+                                    data-confirm="Se registrará el pago de las comisiones seleccionadas."
+                                    data-confirm-icon="success"
+                                    data-confirm-ok="💸 Registrar pago">
                                 💸 Registrar pago
                             </button>
                         </form>

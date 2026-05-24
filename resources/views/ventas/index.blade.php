@@ -111,7 +111,7 @@
                         <form action="{{ route('ventas.destroy', $venta->id) }}" method="POST" class="d-inline">
                             @csrf @method('DELETE')
                             <button class="btn btn-sm btn-danger"
-                                onclick="return confirm('¿Eliminar esta venta?')">🗑</button>
+                                data-confirm="Esta acción eliminará la venta permanentemente.">🗑</button>
                         </form>
                     </td>
                 </tr>

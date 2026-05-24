@@ -6,6 +6,7 @@
     <title>POS - Sistema de Ventas</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 </head>
 <body>
 
@@ -151,5 +152,114 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+(function () {
+    // ── Toast helper ───────────────────────────────────────────────
+    function toast(icon, title, timer) {
+        timer = timer || (icon === 'error' ? 5000 : 3500);
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: timer,
+            timerProgressBar: true,
+            didOpen: function (el) {
+                el.addEventListener('mouseenter', Swal.stopTimer);
+                el.addEventListener('mouseleave', Swal.resumeTimer);
+            }
+        });
+        Toast.fire({ icon: icon, title: title });
+    }
+
+    // ── Disparar flashes de sesión PHP ─────────────────────────────
+    document.addEventListener('DOMContentLoaded', function () {
+
+        @if(session('success'))
+            toast('success', @json(session('success')));
+        @endif
+
+        @if(session('warning'))
+            toast('warning', @json(session('warning')), 4500);
+        @endif
+
+        @if(session('info'))
+            toast('info', @json(session('info')));
+        @endif
+
+        @if(session('success_password'))
+            toast('success', @json(session('success_password')));
+        @endif
+
+        // Errores de sesión o validación → modal (para que el texto largo sea legible)
+        @if(session('error'))
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: @json(session('error')),
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Entendido',
+            });
+        @elseif($errors->any())
+            var _errs = @json($errors->all());
+            Swal.fire({
+                icon: 'error',
+                title: _errs.length === 1 ? 'Ups, hay un problema' : 'Hay ' + _errs.length + ' errores',
+                html: _errs.map(function(e){ return '<div class="text-start py-1 small">• ' + e + '</div>'; }).join(''),
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Entendido',
+                customClass: { htmlContainer: 'text-start' },
+            });
+        @endif
+
+        // Eliminar TODOS los bloques Bootstrap alert de la página
+        // (ya los manejamos con SweetAlert2 arriba)
+        document.querySelectorAll('.alert').forEach(function (el) { el.remove(); });
+
+        // ── Interceptar botones con data-confirm ───────────────────
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest('[data-confirm]');
+            if (!btn) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            const msg    = btn.dataset.confirm || '¿Estás seguro?';
+            const icon   = btn.dataset.confirmIcon || 'warning';
+            const okText = btn.dataset.confirmOk   || 'Sí, continuar';
+            const form   = btn.closest('form');
+
+            Swal.fire({
+                title: '¿Confirmar acción?',
+                text: msg,
+                icon: icon,
+                showCancelButton: true,
+                confirmButtonColor: icon === 'warning' ? '#d33' : '#198754',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: okText,
+                cancelButtonText: 'Cancelar',
+                reverseButtons: true,
+            }).then(function (result) {
+                if (result.isConfirmed && form) {
+                    // Si el botón tiene name/value, agregarlo al form antes de submit
+                    if (btn.name && btn.value) {
+                        var input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = btn.name;
+                        input.value = btn.value;
+                        form.appendChild(input);
+                    }
+                    form.submit();
+                }
+            });
+        }, true);
+    });
+
+    // Exponer toast globalmente para scripts en vistas
+    window.posToast = toast;
+})();
+</script>
+@stack('scripts')
 </body>
 </html>

@@ -6,6 +6,7 @@
     <title>POS - Sistema de Ventas</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 </head>
 <body>
 
@@ -152,6 +153,115 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+(function () {
+    // ── Toast helper ───────────────────────────────────────────────
+    function toast(icon, title, timer) {
+        timer = timer || (icon === 'error' ? 5000 : 3500);
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: timer,
+            timerProgressBar: true,
+            didOpen: function (el) {
+                el.addEventListener('mouseenter', Swal.stopTimer);
+                el.addEventListener('mouseleave', Swal.resumeTimer);
+            }
+        });
+        Toast.fire({ icon: icon, title: title });
+    }
+
+    // ── Disparar flashes de sesión PHP ─────────────────────────────
+    document.addEventListener('DOMContentLoaded', function () {
+
+        <?php if(session('success')): ?>
+            toast('success', <?php echo json_encode(session('success'), 15, 512) ?>);
+        <?php endif; ?>
+
+        <?php if(session('warning')): ?>
+            toast('warning', <?php echo json_encode(session('warning'), 15, 512) ?>, 4500);
+        <?php endif; ?>
+
+        <?php if(session('info')): ?>
+            toast('info', <?php echo json_encode(session('info'), 15, 512) ?>);
+        <?php endif; ?>
+
+        <?php if(session('success_password')): ?>
+            toast('success', <?php echo json_encode(session('success_password'), 15, 512) ?>);
+        <?php endif; ?>
+
+        // Errores de sesión o validación → modal (para que el texto largo sea legible)
+        <?php if(session('error')): ?>
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: <?php echo json_encode(session('error'), 15, 512) ?>,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Entendido',
+            });
+        <?php elseif($errors->any()): ?>
+            var _errs = <?php echo json_encode($errors->all(), 15, 512) ?>;
+            Swal.fire({
+                icon: 'error',
+                title: _errs.length === 1 ? 'Ups, hay un problema' : 'Hay ' + _errs.length + ' errores',
+                html: _errs.map(function(e){ return '<div class="text-start py-1 small">• ' + e + '</div>'; }).join(''),
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Entendido',
+                customClass: { htmlContainer: 'text-start' },
+            });
+        <?php endif; ?>
+
+        // Eliminar TODOS los bloques Bootstrap alert de la página
+        // (ya los manejamos con SweetAlert2 arriba)
+        document.querySelectorAll('.alert').forEach(function (el) { el.remove(); });
+
+        // ── Interceptar botones con data-confirm ───────────────────
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest('[data-confirm]');
+            if (!btn) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            const msg    = btn.dataset.confirm || '¿Estás seguro?';
+            const icon   = btn.dataset.confirmIcon || 'warning';
+            const okText = btn.dataset.confirmOk   || 'Sí, continuar';
+            const form   = btn.closest('form');
+
+            Swal.fire({
+                title: '¿Confirmar acción?',
+                text: msg,
+                icon: icon,
+                showCancelButton: true,
+                confirmButtonColor: icon === 'warning' ? '#d33' : '#198754',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: okText,
+                cancelButtonText: 'Cancelar',
+                reverseButtons: true,
+            }).then(function (result) {
+                if (result.isConfirmed && form) {
+                    // Si el botón tiene name/value, agregarlo al form antes de submit
+                    if (btn.name && btn.value) {
+                        var input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = btn.name;
+                        input.value = btn.value;
+                        form.appendChild(input);
+                    }
+                    form.submit();
+                }
+            });
+        }, true);
+    });
+
+    // Exponer toast globalmente para scripts en vistas
+    window.posToast = toast;
+})();
+</script>
+<?php echo $__env->yieldPushContent('scripts'); ?>
 </body>
 </html>
 <?php /**PATH C:\Users\Usuario\Documents\My Web Sites\POS\Backend\POSRed\resources\views/layouts/app.blade.php ENDPATH**/ ?>

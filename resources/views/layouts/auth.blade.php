@@ -33,5 +33,43 @@
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    function toast(icon, title, timer) {
+        Swal.mixin({
+            toast: true, position: 'top-end',
+            showConfirmButton: false,
+            timer: timer || (icon === 'error' ? 5000 : 3500),
+            timerProgressBar: true,
+        }).fire({ icon: icon, title: title });
+    }
+
+    @if(session('status'))
+        toast('success', @json(session('status')));
+    @endif
+    @if(session('success'))
+        toast('success', @json(session('success')));
+    @endif
+
+    @if(session('error'))
+        Swal.fire({
+            icon: 'error', title: 'Error',
+            text: @json(session('error')),
+            confirmButtonColor: '#d33', confirmButtonText: 'Entendido',
+        });
+    @elseif($errors->any())
+        var _errs = @json($errors->all());
+        Swal.fire({
+            icon: 'error',
+            title: _errs.length === 1 ? 'Ups, hay un problema' : 'Hay ' + _errs.length + ' errores',
+            html: _errs.map(function(e){ return '<div class="text-start py-1 small">• ' + e + '</div>'; }).join(''),
+            confirmButtonColor: '#d33', confirmButtonText: 'Entendido',
+        });
+    @endif
+
+    document.querySelectorAll('.alert').forEach(function (el) { el.remove(); });
+});
+</script>
 </body>
 </html>

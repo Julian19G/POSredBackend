@@ -111,7 +111,7 @@
                         <form action="<?php echo e(route('ventas.destroy', $venta->id)); ?>" method="POST" class="d-inline">
                             <?php echo csrf_field(); ?> <?php echo method_field('DELETE'); ?>
                             <button class="btn btn-sm btn-danger"
-                                onclick="return confirm('¿Eliminar esta venta?')">🗑</button>
+                                data-confirm="Esta acción eliminará la venta permanentemente.">🗑</button>
                         </form>
                     </td>
                 </tr>

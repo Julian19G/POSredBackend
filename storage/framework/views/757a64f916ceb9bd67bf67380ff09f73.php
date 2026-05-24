@@ -139,14 +139,17 @@
                             <form action="<?php echo e(route('pedidos.comprobante.verificar', [$pedido->id, $comp->id])); ?>" method="POST">
                                 <?php echo csrf_field(); ?> <?php echo method_field('PATCH'); ?>
                                 <button class="btn btn-success btn-sm w-100"
-                                        onclick="return confirm('¿Verificar este comprobante y marcar la venta como pagada?')">
+                                        data-confirm="Se marcará la venta como pagada."
+                                        data-confirm-icon="success"
+                                        data-confirm-ok="✅ Verificar">
                                     ✅ Verificar
                                 </button>
                             </form>
                             <form action="<?php echo e(route('pedidos.comprobante.rechazar', [$pedido->id, $comp->id])); ?>" method="POST">
                                 <?php echo csrf_field(); ?> <?php echo method_field('PATCH'); ?>
                                 <button class="btn btn-outline-danger btn-sm w-100"
-                                        onclick="return confirm('¿Rechazar este comprobante?')">
+                                        data-confirm="Se marcará este comprobante como rechazado."
+                                        data-confirm-ok="❌ Rechazar">
                                     ❌ Rechazar
                                 </button>
                             </form>
@@ -307,13 +310,23 @@
                 <form action="<?php echo e(route('pedidos.pago', $pedido->id)); ?>" method="POST">
                     <?php echo csrf_field(); ?> <?php echo method_field('PATCH'); ?>
                     <div class="mb-2">
-                        <label class="form-label small fw-semibold">Confirmar pago directo</label>
+                        <label class="form-label small fw-semibold">Método de pago</label>
                         <select name="metodo_pago" class="form-select form-select-sm" required>
-                            <option value="">Seleccione método…</option>
+                            <option value="">Seleccione…</option>
                             <?php $__currentLoopData = \App\Models\Pedido::metodosLabel(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $val => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                 <option value="<?php echo e($val); ?>"><?php echo e($label); ?></option>
                             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Monto (dejar vacío = total)</label>
+                        <input type="number" name="monto" class="form-control form-control-sm"
+                               min="0" step="1000" placeholder="<?php echo e($pedido->venta->total); ?>">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Referencia (opcional)</label>
+                        <input type="text" name="referencia" class="form-control form-control-sm"
+                               placeholder="Nro. transacción, recibo, etc.">
                     </div>
                     <button class="btn btn-success btn-sm w-100">✅ Confirmar pago</button>
                 </form>

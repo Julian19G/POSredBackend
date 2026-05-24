@@ -50,7 +50,7 @@
                         <a href="{{ route('descuentos.edit', $descuento) }}" class="btn btn-sm btn-warning">Editar</a>
                         <form action="{{ route('descuentos.destroy', $descuento) }}" method="POST" class="d-inline">
                             @csrf @method('DELETE')
-                            <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar descuento?')">
+                            <button class="btn btn-sm btn-danger" data-confirm="Se eliminará este descuento permanentemente.">
                                 Eliminar
                             </button>
                         </form>

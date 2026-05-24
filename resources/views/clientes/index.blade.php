@@ -51,8 +51,8 @@
                         <a href="{{ route('clientes.edit', $cliente) }}" class="btn btn-sm btn-warning">Editar</a>
                         <form action="{{ route('clientes.destroy', $cliente) }}" method="POST" class="d-inline">
                             @csrf @method('DELETE')
-                            <button onclick="return confirm('¿Eliminar cliente?')"
-                                    class="btn btn-sm btn-danger">Eliminar</button>
+                            <button class="btn btn-sm btn-danger"
+                                    data-confirm="Se eliminará el cliente permanentemente.">Eliminar</button>
                         </form>
                     </td>
                 </tr>

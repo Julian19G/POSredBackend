@@ -120,7 +120,7 @@
                         <form action="{{ route('productos.destroy', $producto) }}" method="POST" class="d-inline">
                             @csrf @method('DELETE')
                             <button type="submit" class="btn btn-danger btn-sm"
-                                    onclick="return confirm('¿Eliminar este producto?')">Eliminar</button>
+                                    data-confirm="Se eliminará este producto permanentemente.">Eliminar</button>
                         </form>
                     </td>
                 </tr>

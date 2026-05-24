@@ -135,14 +135,17 @@
                             <form action="{{ route('pedidos.comprobante.verificar', [$pedido->id, $comp->id]) }}" method="POST">
                                 @csrf @method('PATCH')
                                 <button class="btn btn-success btn-sm w-100"
-                                        onclick="return confirm('¿Verificar este comprobante y marcar la venta como pagada?')">
+                                        data-confirm="Se marcará la venta como pagada."
+                                        data-confirm-icon="success"
+                                        data-confirm-ok="✅ Verificar">
                                     ✅ Verificar
                                 </button>
                             </form>
                             <form action="{{ route('pedidos.comprobante.rechazar', [$pedido->id, $comp->id]) }}" method="POST">
                                 @csrf @method('PATCH')
                                 <button class="btn btn-outline-danger btn-sm w-100"
-                                        onclick="return confirm('¿Rechazar este comprobante?')">
+                                        data-confirm="Se marcará este comprobante como rechazado."
+                                        data-confirm-ok="❌ Rechazar">
                                     ❌ Rechazar
                                 </button>
                             </form>

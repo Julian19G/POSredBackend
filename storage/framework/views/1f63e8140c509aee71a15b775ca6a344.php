@@ -101,43 +101,55 @@
             </div>
 
             
-            <?php if($venta->pedido): ?>
+            <?php
+                $pagosConfirmados = $venta->pagos->where('estado','confirmado');
+                $totalPagado      = $pagosConfirmados->sum('monto');
+                $saldoPendiente   = max($venta->total - $totalPagado, 0);
+            ?>
             <div class="card border-0 shadow-sm rounded-4 mt-3">
                 <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 fw-bold">Comprobantes de pago</h6>
+                    <h6 class="mb-0 fw-bold">💰 Pagos recibidos</h6>
                     <?php if($venta->pedido): ?>
-                        <a href="<?php echo e(route('pedidos.show', $venta->pedido->id)); ?>" class="btn btn-xs btn-sm btn-outline-secondary py-0 px-2 small">
+                        <a href="<?php echo e(route('pedidos.show', $venta->pedido->id)); ?>" class="btn btn-sm btn-outline-secondary py-0 px-2 small">
                             Ver pedido
                         </a>
                     <?php endif; ?>
                 </div>
                 <div class="card-body pt-2">
-                    <?php $comprobantes = $venta->pedido->comprobantes; ?>
-                    <?php if($comprobantes->isEmpty()): ?>
-                        <p class="text-muted small mb-0">Sin comprobantes registrados.</p>
-                    <?php else: ?>
-                        <?php $__currentLoopData = $comprobantes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $comp): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                        <div class="d-flex justify-content-between align-items-start border-bottom py-2 small">
-                            <div>
-                                <span class="fw-semibold"><?php echo e(ucfirst($comp->tipo)); ?></span>
-                                <?php if($comp->referencia): ?> — <span class="text-muted"><?php echo e($comp->referencia); ?></span> <?php endif; ?>
-                                <br>
-                                <span class="text-muted" style="font-size:.78rem">
-                                    <?php echo e($comp->created_at->format('d/m/Y H:i')); ?>
+                    <?php $__empty_1 = true; $__currentLoopData = $pagosConfirmados; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $pago): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                    <div class="d-flex justify-content-between align-items-start border-bottom py-2 small">
+                        <div>
+                            <span class="fw-semibold"><?php echo e(\App\Models\Pago::metodosLabel()[$pago->metodo] ?? ucfirst($pago->metodo)); ?></span>
+                            <?php if($pago->referencia): ?> — <span class="text-muted"><?php echo e($pago->referencia); ?></span> <?php endif; ?>
+                            <br>
+                            <span class="text-muted" style="font-size:.78rem">
+                                <?php echo e($pago->fecha_pago?->format('d/m/Y H:i') ?? $pago->created_at->format('d/m/Y H:i')); ?>
 
-                                </span>
-                            </div>
-                            <div class="text-end">
-                                <div class="fw-semibold">$<?php echo e(number_format($comp->monto, 0, ',', '.')); ?></div>
-                                <?php echo $comp->badge_estado; ?>
-
-                            </div>
+                                <?php if($pago->registradoPor): ?> · <?php echo e($pago->registradoPor->name); ?> <?php endif; ?>
+                            </span>
                         </div>
-                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                        <div class="fw-semibold text-success">$<?php echo e(number_format($pago->monto, 0, ',', '.')); ?></div>
+                    </div>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                        <p class="text-muted small mb-1">Sin pagos confirmados aún.</p>
+                    <?php endif; ?>
+
+                    <div class="d-flex justify-content-between pt-2 small fw-semibold border-top mt-1">
+                        <span>Total pagado</span>
+                        <span class="text-success">$<?php echo e(number_format($totalPagado, 0, ',', '.')); ?></span>
+                    </div>
+                    <?php if($saldoPendiente > 0): ?>
+                    <div class="d-flex justify-content-between small fw-bold text-danger">
+                        <span>Saldo pendiente</span>
+                        <span>$<?php echo e(number_format($saldoPendiente, 0, ',', '.')); ?></span>
+                    </div>
+                    <?php else: ?>
+                    <div class="d-flex justify-content-between small fw-bold text-success">
+                        <span>✅ Saldo</span><span>Pagado en su totalidad</span>
+                    </div>
                     <?php endif; ?>
                 </div>
             </div>
-            <?php endif; ?>
         </div>
 
         

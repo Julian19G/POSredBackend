@@ -73,9 +73,9 @@
                                           method="POST" class="d-inline">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" 
+                                        <button type="submit"
                                                 class="btn btn-danger btn-sm"
-                                                onclick="return confirm('¿Estás seguro de eliminar esta categoría?')">
+                                                data-confirm="Se eliminará esta categoría permanentemente.">
                                             <i class="bi bi-trash"></i> Eliminar
                                         </button>
                                     </form>
