@@ -297,13 +297,23 @@
                 <form action="{{ route('pedidos.pago', $pedido->id) }}" method="POST">
                     @csrf @method('PATCH')
                     <div class="mb-2">
-                        <label class="form-label small fw-semibold">Confirmar pago directo</label>
+                        <label class="form-label small fw-semibold">Método de pago</label>
                         <select name="metodo_pago" class="form-select form-select-sm" required>
-                            <option value="">Seleccione método…</option>
+                            <option value="">Seleccione…</option>
                             @foreach(\App\Models\Pedido::metodosLabel() as $val => $label)
                                 <option value="{{ $val }}">{{ $label }}</option>
                             @endforeach
                         </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Monto (dejar vacío = total)</label>
+                        <input type="number" name="monto" class="form-control form-control-sm"
+                               min="0" step="1000" placeholder="{{ $pedido->venta->total }}">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Referencia (opcional)</label>
+                        <input type="text" name="referencia" class="form-control form-control-sm"
+                               placeholder="Nro. transacción, recibo, etc.">
                     </div>
                     <button class="btn btn-success btn-sm w-100">✅ Confirmar pago</button>
                 </form>

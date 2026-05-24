@@ -11,48 +11,49 @@ class Pago extends Model
 
     protected $fillable = [
         'venta_id',
+        'comprobante_id',
+        'registrado_por',
         'monto',
-        'metodo',       // efectivo, tarjeta, transferencia, PayPal
-        'estado',       // pendiente, aprobado, rechazado
+        'metodo',
+        'estado',
         'fecha_pago',
-        'referencia',   // número de transacción o comprobante
+        'referencia',
         'comentarios',
     ];
 
     protected $casts = [
-        'monto' => 'float',
+        'monto'      => 'float',
         'fecha_pago' => 'datetime',
     ];
 
-    /**
-     * Relación con venta
-     */
     public function venta()
     {
-        return $this->belongsTo(\App\Models\Venta::class);
+        return $this->belongsTo(Venta::class);
     }
 
-    /**
-     * Scope para pagos aprobados
-     */
-    public function scopeAprobados($query)
+    public function comprobante()
     {
-        return $query->where('estado', 'aprobado');
+        return $this->belongsTo(Comprobante::class);
     }
 
-    /**
-     * Scope para pagos pendientes
-     */
-    public function scopePendientes($query)
+    public function registradoPor()
     {
-        return $query->where('estado', 'pendiente');
+        return $this->belongsTo(User::class, 'registrado_por');
     }
 
-    /**
-     * Verifica si el pago está aprobado
-     */
-    public function esAprobado()
+    public function scopeConfirmados($query)
     {
-        return $this->estado === 'aprobado';
+        return $query->where('estado', 'confirmado');
+    }
+
+    public static function metodosLabel(): array
+    {
+        return [
+            'efectivo'      => '💵 Efectivo',
+            'transferencia' => '🏦 Transferencia',
+            'cripto'        => '🪙 Cripto',
+            'tarjeta'       => '💳 Tarjeta',
+            'otro'          => '🔄 Otro',
+        ];
     }
 }

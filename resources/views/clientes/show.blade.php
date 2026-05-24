@@ -13,32 +13,71 @@
 
     <div class="row g-4">
 
-        {{-- Info del cliente --}}
+        {{-- ── Datos del cliente ───────────────────────────────── --}}
         <div class="col-md-5">
-            <div class="card border-0 shadow-sm rounded-4">
+
+            <div class="card border-0 shadow-sm rounded-4 mb-3">
                 <div class="card-body">
                     <h5 class="mb-3">Datos del cliente</h5>
                     <table class="table table-sm table-borderless mb-0">
-                        <tr><th>Nombre</th><td>{{ $cliente->nombre }}</td></tr>
-                        <tr><th>Email</th><td>{{ $cliente->email ?: '—' }}</td></tr>
-                        <tr><th>Teléfono</th><td>{{ $cliente->telefono ?: '—' }}</td></tr>
-                        <tr><th>Dirección</th><td>{{ $cliente->direccion ?: '—' }}</td></tr>
-                        <tr><th>Referido por</th><td>
-                            @if($cliente->referidoPor)
-                                <a href="{{ route('clientes.show', $cliente->referidoPor) }}">{{ $cliente->referidoPor->nombre }}</a>
-                            @else
-                                —
-                            @endif
-                        </td></tr>
+                        @if($cliente->email)
+                        <tr><th>Email</th><td>{{ $cliente->email }}</td></tr>
+                        @endif
+                        @if($cliente->telefono)
+                        <tr><th>Teléfono</th><td>📞 {{ $cliente->telefono }}</td></tr>
+                        @endif
+                        @if($cliente->whatsapp)
+                        <tr>
+                            <th>WhatsApp</th>
+                            <td>
+                                <a href="https://wa.me/57{{ preg_replace('/\D/', '', $cliente->whatsapp) }}" target="_blank">
+                                    💬 {{ $cliente->whatsapp }}
+                                </a>
+                            </td>
+                        </tr>
+                        @endif
+                        @if($cliente->instagram)
+                        <tr><th>Instagram</th><td>📸 @{{ $cliente->instagram }}</td></tr>
+                        @endif
+                        @if($cliente->fecha_nacimiento)
+                        <tr><th>Cumpleaños</th><td>🎂 {{ $cliente->fecha_nacimiento->format('d/m/Y') }}</td></tr>
+                        @endif
+                        @if($cliente->ciudad || $cliente->barrio)
+                        <tr>
+                            <th>Ubicación</th>
+                            <td>
+                                {{ collect([$cliente->barrio, $cliente->ciudad])->filter()->join(', ') }}
+                            </td>
+                        </tr>
+                        @endif
+                        @if($cliente->direccion)
+                        <tr><th>Dirección</th><td>{{ $cliente->direccion }}</td></tr>
+                        @endif
+                        @if($cliente->referidoPor)
+                        <tr>
+                            <th>Referido por</th>
+                            <td>
+                                <a href="{{ route('clientes.show', $cliente->referidoPor) }}">
+                                    {{ $cliente->referidoPor->nombre }}
+                                </a>
+                            </td>
+                        </tr>
+                        @endif
                         @if($cliente->referidos->count())
                         <tr><th>Referidos</th><td>{{ $cliente->referidos->count() }} cliente(s)</td></tr>
                         @endif
                     </table>
+
+                    @if($cliente->notas)
+                    <hr class="my-3">
+                    <div class="small text-muted fw-semibold mb-1">Notas</div>
+                    <div class="small fst-italic">{{ $cliente->notas }}</div>
+                    @endif
                 </div>
             </div>
 
             {{-- Resumen estadístico --}}
-            <div class="card border-0 shadow-sm rounded-4 mt-3">
+            <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-body">
                     <h6 class="mb-3">Resumen</h6>
                     <div class="row text-center g-2">
@@ -47,24 +86,27 @@
                             <div class="small text-muted">Ventas</div>
                         </div>
                         <div class="col-4">
-                            <div class="fs-5 fw-bold text-success">${{ number_format($ventas->sum('total'), 0, ',', '.') }}</div>
-                            <div class="small text-muted">Total gastado</div>
+                            <div class="fw-bold text-success" style="font-size:1.1rem">
+                                ${{ number_format($totalGastado, 0, ',', '.') }}
+                            </div>
+                            <div class="small text-muted">Total</div>
                         </div>
                         <div class="col-4">
-                            <div class="fs-4 fw-bold text-warning">{{ $ventas->where('estado','pendiente')->count() }}</div>
+                            <div class="fs-4 fw-bold text-warning">{{ $pendientes }}</div>
                             <div class="small text-muted">Pendientes</div>
                         </div>
                     </div>
                 </div>
             </div>
+
         </div>
 
-        {{-- Historial de ventas --}}
+        {{-- ── Historial de ventas ─────────────────────────────── --}}
         <div class="col-md-7">
             <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between">
+                <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Historial de compras</h5>
-                    <a href="{{ route('ventas.create') }}?cliente={{ $cliente->id }}" class="btn btn-sm btn-primary">+ Nueva venta</a>
+                    <a href="{{ route('ventas.create') }}" class="btn btn-sm btn-primary">+ Nueva venta</a>
                 </div>
                 <div class="card-body p-0">
                     @if($ventas->isEmpty())
@@ -85,13 +127,15 @@
                             <tbody>
                                 @foreach($ventas as $v)
                                 <tr>
-                                    <td class="ps-3 text-muted">{{ $v->id }}</td>
+                                    <td class="ps-3 text-muted small">{{ $v->id }}</td>
                                     <td><small>{{ $v->created_at->format('d/m/Y') }}</small></td>
-                                    <td><strong>${{ number_format($v->total, 0, ',', '.') }}</strong></td>
+                                    <td class="fw-semibold">${{ number_format($v->total, 0, ',', '.') }}</td>
                                     <td>
                                         @if($v->pedido?->metodo_pago)
                                             <span class="badge bg-light text-dark">{{ Str::ucfirst($v->pedido->metodo_pago) }}</span>
-                                        @else <span class="text-muted small">—</span> @endif
+                                        @else
+                                            <span class="text-muted small">—</span>
+                                        @endif
                                     </td>
                                     <td>
                                         @switch($v->estado)
@@ -101,7 +145,7 @@
                                         @endswitch
                                     </td>
                                     <td>
-                                        <a href="{{ route('ventas.show', $v->id) }}" class="btn btn-xs btn-sm btn-outline-secondary py-0 px-2">Ver</a>
+                                        <a href="{{ route('ventas.show', $v->id) }}" class="btn btn-sm btn-outline-secondary py-0 px-2">Ver</a>
                                     </td>
                                 </tr>
                                 @endforeach

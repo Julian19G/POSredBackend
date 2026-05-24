@@ -8,6 +8,7 @@ use App\Models\Producto;
 use App\Models\Variante;
 use App\Models\Cliente;
 use App\Models\Descuento;
+use App\Models\DescuentoUso;
 use App\Models\Pedido;
 use App\Models\Domicilio;
 use App\Models\Vendedor;
@@ -151,6 +152,14 @@ class VentaController extends Controller
                 'estado_pago' => 'pendiente',
             ]);
 
+            if ($descuento) {
+                DescuentoUso::create([
+                    'descuento_id' => $descuento->id,
+                    'cliente_id'   => $venta->cliente_id,
+                    'venta_id'     => $venta->id,
+                ]);
+            }
+
             Comision::crearParaVenta($venta);
 
             DB::commit();
@@ -166,7 +175,14 @@ class VentaController extends Controller
 
     public function show($id)
     {
-        $venta = Venta::with(['cliente', 'detalles.variante.producto', 'domicilio', 'pedido'])->findOrFail($id);
+        $venta = Venta::with([
+            'cliente',
+            'vendedor',
+            'detalles.variante.producto',
+            'domicilio',
+            'pedido.comprobantes',
+            'pagos.registradoPor',
+        ])->findOrFail($id);
         return view('ventas.show', compact('venta'));
     }
 

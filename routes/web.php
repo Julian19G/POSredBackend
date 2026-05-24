@@ -21,6 +21,7 @@ use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\VendedorController;
 use App\Http\Controllers\LiquidacionController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\DB;
 
 // ── Auth (solo para invitados) ─────────────────────────────────
@@ -43,6 +44,9 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->midd
 
 // ── Rutas protegidas (solo usuarios autenticados) ──────────────
 Route::middleware('auth')->group(function () {
+
+    // Gestión de usuarios (admin)
+    Route::resource('users', UserController::class)->except(['create', 'store']);
 
     // Perfil
     Route::get('/profile',           [ProfileController::class, 'edit'])->name('profile.edit');

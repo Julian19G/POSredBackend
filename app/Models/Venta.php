@@ -117,5 +117,25 @@ class Venta extends Model
     {
         return $this->hasOne(Comision::class);
     }
+
+    public function pagos()
+    {
+        return $this->hasMany(Pago::class);
+    }
+
+    public function descuentoUsos()
+    {
+        return $this->hasMany(DescuentoUso::class);
+    }
+
+    public function totalPagado(): float
+    {
+        return (float) $this->pagos()->where('estado', 'confirmado')->sum('monto');
+    }
+
+    public function saldoPendiente(): float
+    {
+        return max($this->total - $this->totalPagado(), 0);
+    }
 }
 

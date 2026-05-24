@@ -90,6 +90,22 @@
                     </ul>
                 </li>
 
+                
+                <?php if(auth()->guard()->check()): ?>
+                <?php if(auth()->user()->isAdmin()): ?>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle <?php echo e(request()->routeIs('users.*') ? 'active fw-semibold' : ''); ?>"
+                       href="#" role="button" data-bs-toggle="dropdown">
+                        Admin
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="<?php echo e(route('users.index')); ?>">👥 Usuarios</a></li>
+                        <li><a class="dropdown-item" href="<?php echo e(route('register')); ?>">➕ Nuevo usuario</a></li>
+                    </ul>
+                </li>
+                <?php endif; ?>
+                <?php endif; ?>
+
             </ul>
 
             

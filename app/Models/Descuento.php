@@ -44,12 +44,14 @@ class Descuento extends Model
         'uso_cliente_maximo' => 'integer',
     ];
 
-    /**
-     * Relación: un descuento puede estar en muchas ventas
-     */
     public function ventas()
     {
         return $this->hasMany(Venta::class);
+    }
+
+    public function usos()
+    {
+        return $this->hasMany(DescuentoUso::class);
     }
 
     /**
@@ -63,24 +65,16 @@ class Descuento extends Model
             ->where('fecha_fin', '>=', now());
     }
 
-    /**
-     * Verifica si un cliente puede usar este descuento
-     */
     public function puedeUsar(Cliente $cliente): bool
     {
         if ($this->uso_maximo !== null) {
-            $totalUso = $this->ventas()->count();
-            if ($totalUso >= $this->uso_maximo) {
+            if ($this->usos()->count() >= $this->uso_maximo) {
                 return false;
             }
         }
 
         if ($this->uso_cliente_maximo !== null) {
-            $usoCliente = $this->ventas()
-                ->where('cliente_id', $cliente->id)
-                ->count();
-
-            if ($usoCliente >= $this->uso_cliente_maximo) {
+            if ($this->usos()->where('cliente_id', $cliente->id)->count() >= $this->uso_cliente_maximo) {
                 return false;
             }
         }

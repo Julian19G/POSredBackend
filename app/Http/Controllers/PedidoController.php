@@ -7,6 +7,7 @@ use App\Models\Venta;
 use App\Models\Domicilio;
 use App\Models\Comprobante;
 use App\Models\Comision;
+use App\Models\Pago;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -114,21 +115,38 @@ class PedidoController extends Controller
     }
 
     /**
-     * Registrar el método de pago por separado
+     * Registrar cobro directo (ej: efectivo en mano)
      */
     public function registrarPago(Request $request, $id)
     {
         $request->validate([
             'metodo_pago' => 'required|in:efectivo,transferencia,cripto,tarjeta,otro',
+            'monto'       => 'nullable|numeric|min:0',
+            'referencia'  => 'nullable|string|max:255',
         ]);
 
-        $pedido = Pedido::findOrFail($id);
-        $pedido->update([
-            'metodo_pago' => $request->metodo_pago,
-            'estado_pago' => 'pagado',
-        ]);
+        $pedido = Pedido::with('venta')->findOrFail($id);
 
-        $pedido->venta->update(['estado' => 'pagada']);
+        DB::transaction(function () use ($pedido, $request) {
+            $monto = $request->filled('monto') ? (float) $request->monto : $pedido->venta->total;
+
+            Pago::create([
+                'venta_id'       => $pedido->venta_id,
+                'registrado_por' => auth()->id(),
+                'monto'          => $monto,
+                'metodo'         => $request->metodo_pago,
+                'estado'         => 'confirmado',
+                'fecha_pago'     => now(),
+                'referencia'     => $request->referencia,
+            ]);
+
+            $pedido->update([
+                'metodo_pago' => $request->metodo_pago,
+                'estado_pago' => 'pagado',
+            ]);
+
+            $pedido->venta->update(['estado' => 'pagada']);
+        });
 
         return back()->with('success', '💰 Pago registrado.');
     }
@@ -175,18 +193,31 @@ class PedidoController extends Controller
         $pedido      = Pedido::findOrFail($pedidoId);
         $comprobante = Comprobante::where('pedido_id', $pedido->id)->findOrFail($comprobanteId);
 
-        $comprobante->update([
-            'estado'         => 'verificado',
-            'notas'          => $request->notas ?? $comprobante->notas,
-            'verificado_en'  => now(),
-        ]);
+        DB::transaction(function () use ($comprobante, $pedido, $request) {
+            $comprobante->update([
+                'estado'         => 'verificado',
+                'notas'          => $request->notas ?? $comprobante->notas,
+                'verificado_en'  => now(),
+            ]);
 
-        $pedido->update([
-            'metodo_pago' => $comprobante->tipo,
-            'estado_pago' => 'pagado',
-        ]);
+            Pago::create([
+                'venta_id'       => $pedido->venta_id,
+                'comprobante_id' => $comprobante->id,
+                'registrado_por' => auth()->id(),
+                'monto'          => $comprobante->monto,
+                'metodo'         => $comprobante->tipo,
+                'estado'         => 'confirmado',
+                'fecha_pago'     => $comprobante->verificado_en,
+                'referencia'     => $comprobante->referencia,
+            ]);
 
-        $pedido->venta->update(['estado' => 'pagada']);
+            $pedido->update([
+                'metodo_pago' => $comprobante->tipo,
+                'estado_pago' => 'pagado',
+            ]);
+
+            $pedido->venta->update(['estado' => 'pagada']);
+        });
 
         return back()->with('success', '✅ Comprobante verificado. Venta marcada como pagada.');
     }

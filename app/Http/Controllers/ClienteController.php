@@ -63,7 +63,10 @@ class ClienteController extends Controller
                     ->latest()
                     ->paginate(10, ['*'], 'ventas_page');
 
-        return view('clientes.show', compact('cliente', 'ventas'));
+        $totalGastado = Venta::where('cliente_id', $id)->where('estado', '!=', 'cancelada')->sum('total');
+        $pendientes   = Venta::where('cliente_id', $id)->where('estado', 'pendiente')->count();
+
+        return view('clientes.show', compact('cliente', 'ventas', 'totalGastado', 'pendientes'));
     }
 
     public function edit(string $id)

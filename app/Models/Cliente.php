@@ -29,16 +29,23 @@ class Cliente extends Model
         'fecha_nacimiento' => 'date',
     ];
 
-    //Relacionar que un cliente fue referido por otro
     public function referidoPor()
     {
         return $this->belongsTo(Cliente::class, 'referido_por');
     }
 
-    //Relacionar que un cliente refiere a otros
-
     public function referidos()
     {
         return $this->hasMany(Cliente::class, 'referido_por');
+    }
+
+    public function ventas()
+    {
+        return $this->hasMany(Venta::class);
+    }
+
+    public function descuentoUsos()
+    {
+        return $this->hasMany(DescuentoUso::class);
     }
 }
