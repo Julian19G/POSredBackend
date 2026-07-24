@@ -14,6 +14,11 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo('/login');
         $middleware->redirectUsersTo('/');
+
+        // Límite de peticiones a la API pública (anti-spam / fuerza bruta)
+        $middleware->api(append: [
+            'throttle:300,1',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

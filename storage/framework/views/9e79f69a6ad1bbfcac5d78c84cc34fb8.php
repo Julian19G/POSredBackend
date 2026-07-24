@@ -42,10 +42,10 @@
                             </span>
                         </td>
                         <td>
-                            <?php if($pedido->venta->envio): ?>
-                                <span class="badge bg-info text-dark">🚚 Sí</span>
+                            <?php if($pedido->venta->envio || $pedido->venta->domicilio): ?>
+                                <span class="badge bg-info text-dark">🛵 Domicilio</span>
                             <?php else: ?>
-                                <span class="text-muted small">No</span>
+                                <span class="badge bg-success-subtle text-success">🏪 Recoge</span>
                             <?php endif; ?>
                         </td>
                         <td class="text-muted small"><?php echo e($pedido->created_at->format('d/m/Y')); ?></td>

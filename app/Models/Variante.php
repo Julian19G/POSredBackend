@@ -11,6 +11,13 @@ class Variante extends Model
         'precio', 'stock', 'activo',
     ];
 
+    protected $casts = [
+        'cantidad_por_variante' => 'float',
+        'precio'                => 'float',
+        'stock'                 => 'integer',
+        'activo'                => 'boolean',
+    ];
+
     public function producto()
     {
         return $this->belongsTo(Producto::class);

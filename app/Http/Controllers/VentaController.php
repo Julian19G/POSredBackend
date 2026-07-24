@@ -448,7 +448,8 @@ class VentaController extends Controller
         }
         unset($linea);
 
-        // ── Pasada 3: persistir y descontar stock ───────────────────────────
+        // ── Pasada 3: persistir y descontar stock (en unidades base) ─────────
+        $afectados = [];
         foreach ($lineas as $linea) {
             $row = $linea['data'];
             $row['descuento_aplicado'] = $linea['descuentoLinea'];
@@ -457,11 +458,19 @@ class VentaController extends Controller
             DetalleVenta::create($row);
 
             if (isset($linea['variante'])) {
-                $linea['variante']->decrement('stock', $row['cantidad']);
-                $linea['variante']->producto->decrement('stock', $linea['unidadesBase']);
+                $prod = $linea['variante']->producto;
+                $prod->decrement('stock', $linea['unidadesBase']);
             } else {
-                $linea['producto']->decrement('stock', $row['cantidad']);
+                $prod = $linea['producto'];
+                $prod->decrement('stock', $row['cantidad']);
             }
+            $afectados[$prod->id] = $prod;
+        }
+
+        // Recalcular disponibilidad de paquetes de los productos afectados
+        foreach ($afectados as $prod) {
+            $prod->load('variantes');
+            $prod->sincronizarStockPaquetes();
         }
     }
 }

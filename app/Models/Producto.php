@@ -16,9 +16,33 @@ class Producto extends Model
 
     protected $fillable = [
     'nombre', 'descripcion', 'stock',
-    'imagen', 'activo', 'categoria_id',
+    'imagen', 'activo', 'categoria_id', 'tipo_flor_id',
     'motivo_inactivo', 'motivo_inactivo_detalle',
     ];
+
+    protected $casts = [
+        'stock'  => 'float',
+        'activo' => 'boolean',
+    ];
+
+    /**
+     * Recalcula la disponibilidad (en paquetes) de cada variante a partir
+     * del stock total del producto (en unidades base). El stock por variante
+     * es una caché derivada: floor(stock_producto / cantidad_por_variante).
+     */
+    public function sincronizarStockPaquetes(): void
+    {
+        $total = max((float) $this->stock, 0);
+
+        foreach ($this->variantes as $variante) {
+            $cant = (float) $variante->cantidad_por_variante;
+            $disponibles = $cant > 0 ? (int) floor($total / $cant) : 0;
+
+            $variante->stock  = $disponibles;
+            $variante->activo = $disponibles > 0;
+            $variante->save();
+        }
+    }
 
     /**
      * Motivos predefinidos para inhabilitar un producto.
@@ -41,6 +65,11 @@ class Producto extends Model
     public function categoria()
     {
         return $this->belongsTo(Categoria::class, 'categoria_id');
+    }
+
+    public function tipoFlor()
+    {
+        return $this->belongsTo(\App\Models\TipoFlor::class, 'tipo_flor_id');
     }
 
     /**

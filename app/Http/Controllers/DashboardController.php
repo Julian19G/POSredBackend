@@ -48,6 +48,17 @@ class DashboardController extends Controller
 
         $comisionesTotales = Comision::where('estado', 'pendiente')->sum('monto_comision');
 
+        // Ganancia extra de la tienda: recargo del envío (referidos) que se retiene.
+        // Es la diferencia entre lo cobrado (costo_envio) y la tarifa base (tarifa_monto).
+        $gananciaEnviosMes = Domicilio::where('created_at', '>=', $inicioMes)
+            ->whereNotNull('tarifa_monto')
+            ->whereColumn('costo_envio', '>', 'tarifa_monto')
+            ->sum(DB::raw('costo_envio - tarifa_monto'));
+
+        $gananciaEnviosTotal = Domicilio::whereNotNull('tarifa_monto')
+            ->whereColumn('costo_envio', '>', 'tarifa_monto')
+            ->sum(DB::raw('costo_envio - tarifa_monto'));
+
         $topProductos = DetalleVenta::select(
                 'nombre_producto',
                 DB::raw('SUM(cantidad) as total_vendido'),
@@ -74,8 +85,10 @@ class DashboardController extends Controller
             'ventasMes'         => $ventasMes,
             'ingresosMes'       => $ingresosMes,
             'pendienteCobro'    => $pendienteCobro,
-            'pedidosPendientes' => $pedidosPendientes,
-            'comisionesTotales' => $comisionesTotales,
+            'pedidosPendientes'   => $pedidosPendientes,
+            'comisionesTotales'   => $comisionesTotales,
+            'gananciaEnviosMes'   => $gananciaEnviosMes,
+            'gananciaEnviosTotal' => $gananciaEnviosTotal,
             'topProductos'      => $topProductos,
             'stockBajo'         => $stockBajo,
             'ventasRecientes'   => $ventasRecientes,

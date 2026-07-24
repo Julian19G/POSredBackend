@@ -24,6 +24,10 @@ use App\Http\Controllers\LiquidacionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\DomiciliarioController;
 use App\Http\Controllers\RutaController;
+use App\Http\Controllers\NotificacionController;
+use App\Http\Controllers\PresentacionController;
+use App\Http\Controllers\TipoFlorController;
+use App\Http\Controllers\TunnelController;
 use Illuminate\Support\Facades\DB;
 
 // ── Auth (solo para invitados) ─────────────────────────────────
@@ -58,6 +62,10 @@ Route::middleware('auth')->group(function () {
     // Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
+    // Notificaciones (panel) — poller del navbar
+    Route::get('/notificaciones',       [NotificacionController::class, 'index'])->name('notificaciones.index');
+    Route::post('/notificaciones/leer', [NotificacionController::class, 'leer'])->name('notificaciones.leer');
+
     // Ventas
     Route::resource('ventas', VentaController::class);
     Route::get('/ventas/{id}/recibo', [VentaController::class, 'recibo'])->name('ventas.recibo');
@@ -77,6 +85,21 @@ Route::middleware('auth')->group(function () {
     Route::resource('vendedores', VendedorController::class)->parameters(['vendedores' => 'vendedor']);
     Route::post('vendedores/{vendedor}/liquidaciones',                       [LiquidacionController::class, 'store'])->name('liquidaciones.store');
     Route::get('vendedores/{vendedor}/liquidaciones/{liquidacion}',          [LiquidacionController::class, 'show'])->name('liquidaciones.show');
+
+    // Presentaciones (paquetes reutilizables) y Tipos de flor
+    Route::get('presentaciones',                 [PresentacionController::class, 'index'])->name('presentaciones.index');
+    Route::post('presentaciones',                [PresentacionController::class, 'store'])->name('presentaciones.store');
+    Route::delete('presentaciones/{presentacion}', [PresentacionController::class, 'destroy'])->name('presentaciones.destroy');
+
+    // Publicar tienda (túnel Cloudflare) — admin
+    Route::get('tunnel',        [TunnelController::class, 'index'])->name('tunnel.index');
+    Route::get('tunnel/status', [TunnelController::class, 'status'])->name('tunnel.status');
+    Route::post('tunnel/start', [TunnelController::class, 'start'])->name('tunnel.start');
+    Route::post('tunnel/stop',  [TunnelController::class, 'stop'])->name('tunnel.stop');
+
+    Route::get('tipos-flor',              [TipoFlorController::class, 'index'])->name('tipos-flor.index');
+    Route::post('tipos-flor',             [TipoFlorController::class, 'store'])->name('tipos-flor.store');
+    Route::delete('tipos-flor/{tipoFlor}',[TipoFlorController::class, 'destroy'])->name('tipos-flor.destroy');
 
     Route::resource('colores', ColorController::class)->parameters(['colores' => 'color']);
     Route::resource('sabores', SaborController::class)->parameters(['sabores' => 'sabor']);

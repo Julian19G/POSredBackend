@@ -17,6 +17,10 @@ use App\Models\TarifaDomicilio;
 use App\Models\Domicilio;
 use App\Models\Vendedor;
 use App\Models\Comision;
+use App\Models\Variante;
+use App\Models\User;
+use App\Notifications\NuevaVentaNotification;
+use Illuminate\Support\Facades\Notification;
 
 // ─── Categorías ────────────────────────────────────────────
 Route::get('/categorias', function () {
@@ -42,7 +46,7 @@ Route::get('/categorias/{id}/productos', function ($id) {
     try {
         $categoria = Categoria::findOrFail($id);
 
-        $productos = Producto::with(['variantes', 'sabores', 'efectos', 'colores'])
+        $productos = Producto::with(['variantes', 'sabores', 'efectos', 'colores', 'tipoFlor'])
             ->where('categoria_id', $id)
             ->where('activo', true)
             ->orderBy('nombre')
@@ -53,6 +57,7 @@ Route::get('/categorias/{id}/productos', function ($id) {
                 'descripcion' => $prod->descripcion,
                 'stock'       => $prod->stock,
                 'imagen'      => $prod->imagen ? asset('storage/' . $prod->imagen) : null,
+                'tipo_flor'   => $prod->tipoFlor ? ['nombre' => $prod->tipoFlor->nombre, 'icono' => $prod->tipoFlor->icono] : null,
                 'variantes'   => $prod->variantes
                     ->sortBy('precio')
                     ->values()
@@ -87,7 +92,7 @@ Route::get('/categorias/{id}/productos', function ($id) {
 
 // ─── Producto individual ───────────────────────────────────
 Route::get('/productos/{id}', function ($id) {
-    $prod = Producto::with(['variantes', 'sabores', 'efectos', 'colores', 'categoria'])
+    $prod = Producto::with(['variantes', 'sabores', 'efectos', 'colores', 'categoria', 'tipoFlor'])
         ->findOrFail($id);
 
     // Reseñas — defensivo: la tabla puede no existir aún
@@ -114,6 +119,7 @@ Route::get('/productos/{id}', function ($id) {
         'descripcion' => $prod->descripcion,
         'stock'       => $prod->stock,
         'imagen'      => $prod->imagen ? asset('storage/' . $prod->imagen) : null,
+        'tipo_flor'   => $prod->tipoFlor ? ['nombre' => $prod->tipoFlor->nombre, 'icono' => $prod->tipoFlor->icono] : null,
         'variantes'   => $prod->variantes
             ->sortBy('precio')
             ->values()
@@ -139,9 +145,11 @@ Route::get('/productos/{id}', function ($id) {
     ]);
 });
 
-// ─── Seguimiento de pedido ─────────────────────────────────
-Route::get('/pedidos/{id}', function ($id) {
-    $pedido = Pedido::with(['venta.cliente', 'venta.detalles'])->findOrFail($id);
+// ─── Seguimiento de pedido (por token inadivinable, no por id secuencial) ───
+Route::get('/pedidos/{token}', function ($token) {
+    $pedido = Pedido::with(['venta.cliente', 'venta.detalles'])
+        ->where('public_token', $token)
+        ->firstOrFail();
 
     $metodos = [
         'efectivo'      => '💵 Efectivo',
@@ -204,9 +212,10 @@ Route::get('/ref/{codigo}', function ($codigo) {
 
     return response()->json([
         'vendedor' => [
-            'id'     => $vendedor->id,
-            'nombre' => $vendedor->nombre,
-            'codigo' => $vendedor->codigo,
+            'id'                 => $vendedor->id,
+            'nombre'             => $vendedor->nombre,
+            'codigo'             => $vendedor->codigo,
+            'recargo_porcentaje' => (float) $vendedor->comision_porcentaje,
         ],
     ]);
 });
@@ -220,7 +229,7 @@ Route::post('/checkout', function (Request $request) {
         'cliente.barrio'          => 'nullable|string|max:100',
         'items'                   => 'required|array|min:1',
         'items.*.producto_id'     => 'required|integer|exists:productos,id',
-        'items.*.variante_id'     => 'nullable|integer|exists:variantes,id',
+        'items.*.variante_id'     => 'required|integer|exists:variantes,id',
         'items.*.nombre_producto' => 'required|string|max:255',
         'items.*.nombre_variante' => 'nullable|string|max:100',
         'items.*.cantidad'        => 'required|integer|min:1',
@@ -260,37 +269,80 @@ Route::post('/checkout', function (Request $request) {
             ? Vendedor::find($cliente->vendedor_id)
             : $vendedorCodigo;
 
-        $subtotal = collect($request->items)
-            ->sum(fn($i) => $i['cantidad'] * $i['precio_unitario']);
+        // Recargo del referido: % del vendedor que se suma al precio (lo paga el cliente)
+        $markup = ($vendedor && $vendedor->comision_porcentaje > 0)
+            ? $vendedor->comision_porcentaje / 100
+            : 0;
+
+        // Recalcular precios SERVER-SIDE desde el precio real de la variante (no confiar en el front)
+        $baseSubtotal  = 0;   // suma real sin recargo (base para la comisión)
+        $subtotalFinal = 0;   // lo que paga el cliente (con recargo)
+        $lineas = [];
+        $necesidad = [];      // unidades base requeridas por producto
+        foreach ($request->items as $item) {
+            // Precio SIEMPRE desde la variante real (variante_id es obligatorio): no se confía en el front
+            $variante    = Variante::find($item['variante_id']);
+            $precioBase  = (float) ($variante->precio ?? 0);
+            $cant        = (int) $item['cantidad'];
+            $precioFinal = round($precioBase * (1 + $markup));
+
+            $baseSubtotal  += $precioBase  * $cant;
+            $subtotalFinal += $precioFinal * $cant;
+
+            if ($variante) {
+                $unidades = (float) $variante->cantidad_por_variante * $cant;
+                $necesidad[$variante->producto_id] = ($necesidad[$variante->producto_id] ?? 0) + $unidades;
+            }
+
+            $lineas[] = $item + ['precio_final' => $precioFinal, 'cant' => $cant];
+        }
+
+        // Validar stock suficiente (en unidades base) antes de reservar
+        $productos = Producto::whereIn('id', array_keys($necesidad))->get()->keyBy('id');
+        foreach ($necesidad as $pid => $need) {
+            $p = $productos[$pid] ?? null;
+            if (!$p || (float) $p->stock < $need) {
+                abort(422, 'No hay stock suficiente para "' . ($p->nombre ?? 'el producto') . '".');
+            }
+        }
 
         $esEnvio    = $request->boolean('envio');
         $tarifa     = $esEnvio ? TarifaDomicilio::vigente() : null;
-        $costoEnvio = $tarifa ? $tarifa->monto : 0;
+        $envioBase  = $tarifa ? (float) $tarifa->monto : 0;
+        $envioFinal = round($envioBase * (1 + $markup));   // el envío también lleva recargo
 
         $venta = Venta::create([
             'cliente_id'       => $cliente->id,
             'vendedor_id'      => $vendedor?->id,
-            'subtotal'         => $subtotal,
+            'subtotal'         => $subtotalFinal,
             'descuento_manual' => 0,
-            'costo_envio'      => $costoEnvio,
+            'costo_envio'      => $envioFinal,
             'estado'           => 'pendiente',
             'envio'            => $esEnvio,
             'direccion_envio'  => $clienteData['direccion'] ?? null,
         ]);
 
-        foreach ($request->items as $item) {
+        foreach ($lineas as $l) {
             DetalleVenta::create([
                 'venta_id'           => $venta->id,
-                'producto_id'        => $item['producto_id'],
-                'variante_id'        => $item['variante_id'] ?? null,
-                'nombre_producto'    => $item['nombre_producto'],
-                'nombre_variante'    => $item['nombre_variante'] ?? null,
-                'cantidad'           => $item['cantidad'],
-                'precio_unitario'    => $item['precio_unitario'],
+                'producto_id'        => $l['producto_id'],
+                'variante_id'        => $l['variante_id'] ?? null,
+                'nombre_producto'    => $l['nombre_producto'],
+                'nombre_variante'    => $l['nombre_variante'] ?? null,
+                'cantidad'           => $l['cant'],
+                'precio_unitario'    => $l['precio_final'],
                 'descuento_aplicado' => 0,
                 'impuesto'           => 0,
-                'subtotal'           => $item['cantidad'] * $item['precio_unitario'],
+                'subtotal'           => $l['precio_final'] * $l['cant'],
             ]);
+        }
+
+        // Reservar stock: descontar unidades base y recalcular disponibilidad de paquetes
+        foreach ($necesidad as $pid => $need) {
+            $p = $productos[$pid];
+            $p->decrement('stock', $need);
+            $p->load('variantes');
+            $p->sincronizarStockPaquetes();
         }
 
         if ($esEnvio) {
@@ -301,7 +353,7 @@ Route::post('/checkout', function (Request $request) {
                 'departamento'=> null,
                 'pais'        => 'Colombia',
                 'estado'      => 'pendiente',
-                'costo_envio' => $costoEnvio,
+                'costo_envio' => $envioFinal,
                 'tarifa_id'   => $tarifa?->id,
                 'tarifa_monto'=> $tarifa?->monto,
                 'cobrar_en_entrega' => true,
@@ -316,14 +368,33 @@ Route::post('/checkout', function (Request $request) {
             'notas'       => $request->notas,
         ]);
 
-        // Comisión del vendedor (no-op si no hay vendedor o su % es 0)
-        Comision::crearParaVenta($venta->fresh());
+        // Comisión del vendedor = SOLO el recargo de los productos.
+        // El recargo del envío se lo queda la tienda (cubre logística/domicilios).
+        if ($vendedor && $markup > 0) {
+            $baseProductos    = round($baseSubtotal);
+            $recargoProductos = round($subtotalFinal - $baseSubtotal); // markup solo de productos
+            Comision::create([
+                'vendedor_id'    => $vendedor->id,
+                'venta_id'       => $venta->id,
+                'monto_venta'    => $baseProductos,
+                'porcentaje'     => $vendedor->comision_porcentaje,
+                'monto_comision' => max($recargoProductos, 0),
+                'estado'         => 'pendiente',
+            ]);
+        }
+
+        // Notificar a los administradores: nueva venta del frontend
+        $admins = User::where('role', 'admin')->get();
+        if ($admins->isNotEmpty()) {
+            Notification::send($admins, new NuevaVentaNotification($pedido));
+        }
 
         return response()->json([
-            'pedido_id'   => $pedido->id,
-            'total'       => $venta->total,
-            'costo_envio' => $costoEnvio,
-            'cliente'     => $cliente->nombre,
+            'pedido_id'         => $pedido->id,            // número amigable para mostrar (#id)
+            'seguimiento_token' => $pedido->public_token,  // token para la URL de seguimiento
+            'total'             => $venta->total,
+            'costo_envio'       => $envioFinal,
+            'cliente'           => $cliente->nombre,
         ], 201);
     });
 });
@@ -403,6 +474,38 @@ Route::middleware('auth:sanctum')->group(function () {
         return response()->json(['ok' => true]);
     });
 
+    // ─── Notificaciones del cliente (poller del SPA) ───────────
+    Route::get('/clientes/notificaciones', function (Request $request) {
+        $cliente = $request->user();
+
+        $items = $cliente->notifications()
+            ->latest()
+            ->limit(15)
+            ->get()
+            ->map(fn ($n) => [
+                'id'    => $n->id,
+                'leida' => $n->read_at !== null,
+                'fecha' => $n->created_at->diffForHumans(),
+                'data'  => $n->data,
+            ]);
+
+        return response()->json([
+            'no_leidas' => $cliente->unreadNotifications()->count(),
+            'ultima_id' => $items->first()['id'] ?? null,
+            'items'     => $items,
+        ]);
+    });
+
+    Route::post('/clientes/notificaciones/leer', function (Request $request) {
+        $cliente = $request->user();
+        if ($request->filled('id')) {
+            $cliente->notifications()->where('id', $request->id)->update(['read_at' => now()]);
+        } else {
+            $cliente->unreadNotifications->markAsRead();
+        }
+        return response()->json(['ok' => true, 'no_leidas' => $cliente->unreadNotifications()->count()]);
+    });
+
     Route::get('/clientes/me', function (Request $request) {
         $c = $request->user();
         return response()->json([
@@ -433,7 +536,8 @@ Route::middleware('auth:sanctum')->group(function () {
                 ->groupBy('venta_id');
 
             $resultado = $pedidos->map(fn($p) => [
-                'id'          => $p->id,
+                'id'                => $p->id,
+                'seguimiento_token' => $p->public_token,
                 'estado'      => $p->estado,
                 'estado_pago' => $p->estado_pago,
                 'metodo_pago' => $p->metodo_pago,
@@ -488,17 +592,4 @@ Route::middleware('auth:sanctum')->group(function () {
         return response()->json(['ok' => true]);
     });
 
-});
-
-Route::get('/test-public', function () {
-    return response()->json(['ok' => true, 'msg' => 'sin auth']);
-});
-
-Route::get('/test-db', function () {
-    $count = DB::table('clientes')->count();
-    return response()->json(['clientes' => $count]);
-});
-
-Route::middleware('auth:sanctum')->get('/test-auth', function (Request $request) {
-    return response()->json(['user_id' => $request->user()?->id, 'ok' => true]);
 });

@@ -80,32 +80,45 @@
         </div>
 
         
-        <?php if($pedido->venta->domicilio): ?>
-        <?php $dom = $pedido->venta->domicilio; ?>
-        <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <?php
+            $dom    = $pedido->venta->domicilio;
+            $esEnvio = $pedido->venta->envio || $dom;
+        ?>
+        <div class="card border-0 shadow-sm rounded-4 mb-4 border-start border-4 <?php echo e($esEnvio ? 'border-info' : 'border-success'); ?>">
             <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <h6 class="fw-bold">🚚 Domicilio</h6>
-                    <a href="<?php echo e(route('domicilios.show', $dom->id)); ?>" class="btn btn-outline-secondary btn-sm">Ver en mapa</a>
-                </div>
-                <p class="mb-1 fw-semibold"><?php echo e($dom->direccion); ?></p>
-                <?php if($dom->referencia_ubicacion): ?>
-                <p class="mb-1 text-muted small">📍 <?php echo e($dom->referencia_ubicacion); ?></p>
-                <?php endif; ?>
-                <?php if($dom->zona): ?>
-                <p class="mb-1 text-muted small">🗺 <?php echo e($dom->zona->nombre); ?></p>
-                <?php endif; ?>
-                <p class="mb-2 text-muted small"><?php echo e($dom->ciudad); ?>, <?php echo e($dom->departamento); ?></p>
-                <?php if($dom->comentarios): ?>
-                <p class="text-muted small fst-italic mb-2"><?php echo e($dom->comentarios); ?></p>
-                <?php endif; ?>
-                <span class="badge bg-<?php echo e($dom->estado === 'entregado' ? 'success' : ($dom->estado === 'cancelado' ? 'danger' : 'warning')); ?>">
-                    <?php echo e(ucfirst($dom->estado)); ?>
+                <?php if($esEnvio): ?>
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="fw-bold mb-0">🛵 Entrega a domicilio</h6>
+                        <?php if($dom): ?>
+                        <a href="<?php echo e(route('domicilios.show', $dom->id)); ?>" class="btn btn-outline-secondary btn-sm">Ver en mapa</a>
+                        <?php endif; ?>
+                    </div>
+                    <p class="mb-1 fw-semibold">📍 <?php echo e($dom->direccion ?? $pedido->venta->direccion_envio ?? 'Dirección no especificada'); ?></p>
+                    <?php if($dom && $dom->referencia_ubicacion): ?>
+                    <p class="mb-1 text-muted small"><?php echo e($dom->referencia_ubicacion); ?></p>
+                    <?php endif; ?>
+                    <?php if($dom && $dom->zona): ?>
+                    <p class="mb-1 text-muted small">🗺 <?php echo e($dom->zona->nombre); ?></p>
+                    <?php endif; ?>
+                    <?php if($dom): ?>
+                    <p class="mb-2 text-muted small"><?php echo e($dom->ciudad); ?>, <?php echo e($dom->departamento); ?></p>
+                    <?php if($dom->comentarios): ?>
+                    <p class="text-muted small fst-italic mb-2"><?php echo e($dom->comentarios); ?></p>
+                    <?php endif; ?>
+                    <?php if($pedido->venta->costo_envio > 0): ?>
+                    <p class="mb-2 small">Costo de envío: <strong>$<?php echo e(number_format($pedido->venta->costo_envio, 0, ',', '.')); ?></strong></p>
+                    <?php endif; ?>
+                    <span class="badge bg-<?php echo e($dom->estado === 'entregado' ? 'success' : ($dom->estado === 'cancelado' ? 'danger' : 'warning')); ?>">
+                        <?php echo e(ucfirst($dom->estado)); ?>
 
-                </span>
+                    </span>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <h6 class="fw-bold mb-1">🏪 Recoge en tienda</h6>
+                    <p class="text-muted small mb-0">El cliente pasará a recoger su pedido en el local (sin envío).</p>
+                <?php endif; ?>
             </div>
         </div>
-        <?php endif; ?>
 
         
         <div class="card border-0 shadow-sm rounded-4">

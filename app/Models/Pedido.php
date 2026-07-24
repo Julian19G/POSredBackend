@@ -5,11 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Pedido extends Model
 {
     protected $fillable = [
         'venta_id',
+        'public_token',
         'estado',
         'metodo_pago',
         'estado_pago',
@@ -26,6 +28,17 @@ class Pedido extends Model
         'fecha_entrega'     => 'datetime',
         'fecha_cancelacion' => 'datetime',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($pedido) {
+            if (empty($pedido->public_token)) {
+                $pedido->public_token = (string) Str::uuid();
+            }
+        });
+    }
 
     public function venta()
     {

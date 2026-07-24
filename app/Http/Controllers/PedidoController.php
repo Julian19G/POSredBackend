@@ -73,8 +73,9 @@ class PedidoController extends Controller
             'notas'           => 'nullable|string|max:500',
         ]);
 
-        $pedido = Pedido::with('venta.domicilio', 'venta.pagos')->findOrFail($id);
+        $pedido = Pedido::with('venta.domicilio', 'venta.pagos', 'venta.detalles')->findOrFail($id);
         $this->verificarAccesoPedido($pedido);
+        $estadoAnterior = $pedido->estado;
 
         // — Validar: "entregado" requiere pago confirmado —
         if ($request->estado === 'entregado' && $pedido->estado_pago !== 'pagado') {
@@ -85,7 +86,7 @@ class PedidoController extends Controller
             }
         }
 
-        DB::transaction(function () use ($pedido, $request) {
+        DB::transaction(function () use ($pedido, $request, $estadoAnterior) {
 
             $nuevoEstado = $request->estado;
 
@@ -135,6 +136,22 @@ class PedidoController extends Controller
                 if ($comision && $comision->estado === 'pendiente') {
                     $comision->update(['estado' => 'anulada']);
                 }
+
+                // Devolver al stock las unidades reservadas (solo si no estaba ya cancelado)
+                if ($estadoAnterior !== 'cancelado') {
+                    $afectados = [];
+                    foreach ($pedido->venta->detalles as $d) {
+                        if (!$d->variante_id) continue;
+                        $var = \App\Models\Variante::find($d->variante_id);
+                        if (!$var || !$var->producto) continue;
+                        $var->producto->increment('stock', (float) $var->cantidad_por_variante * (int) $d->cantidad);
+                        $afectados[$var->producto->id] = $var->producto;
+                    }
+                    foreach ($afectados as $prod) {
+                        $prod->load('variantes');
+                        $prod->sincronizarStockPaquetes();
+                    }
+                }
             } else {
                 $pedido->venta->update(['estado' => 'pendiente']);
             }
@@ -149,6 +166,12 @@ class PedidoController extends Controller
                 $pedido->venta->domicilio->update(['estado' => $estadoDomicilio]);
             }
         });
+
+        // Notificar al cliente el cambio de estado de su pedido
+        $cliente = $pedido->venta?->cliente;
+        if ($cliente) {
+            $cliente->notify(new \App\Notifications\EstadoPedidoNotification($pedido->fresh()));
+        }
 
         return back()->with('success', '✅ Estado actualizado correctamente.');
     }

@@ -77,32 +77,45 @@
             </div>
         </div>
 
-        {{-- Domicilio --}}
-        @if($pedido->venta->domicilio)
-        @php $dom = $pedido->venta->domicilio; @endphp
-        <div class="card border-0 shadow-sm rounded-4 mb-4">
+        {{-- Tipo de entrega: domicilio o recoge en tienda --}}
+        @php
+            $dom    = $pedido->venta->domicilio;
+            $esEnvio = $pedido->venta->envio || $dom;
+        @endphp
+        <div class="card border-0 shadow-sm rounded-4 mb-4 border-start border-4 {{ $esEnvio ? 'border-info' : 'border-success' }}">
             <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <h6 class="fw-bold">🚚 Domicilio</h6>
-                    <a href="{{ route('domicilios.show', $dom->id) }}" class="btn btn-outline-secondary btn-sm">Ver en mapa</a>
-                </div>
-                <p class="mb-1 fw-semibold">{{ $dom->direccion }}</p>
-                @if($dom->referencia_ubicacion)
-                <p class="mb-1 text-muted small">📍 {{ $dom->referencia_ubicacion }}</p>
+                @if($esEnvio)
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="fw-bold mb-0">🛵 Entrega a domicilio</h6>
+                        @if($dom)
+                        <a href="{{ route('domicilios.show', $dom->id) }}" class="btn btn-outline-secondary btn-sm">Ver en mapa</a>
+                        @endif
+                    </div>
+                    <p class="mb-1 fw-semibold">📍 {{ $dom->direccion ?? $pedido->venta->direccion_envio ?? 'Dirección no especificada' }}</p>
+                    @if($dom && $dom->referencia_ubicacion)
+                    <p class="mb-1 text-muted small">{{ $dom->referencia_ubicacion }}</p>
+                    @endif
+                    @if($dom && $dom->zona)
+                    <p class="mb-1 text-muted small">🗺 {{ $dom->zona->nombre }}</p>
+                    @endif
+                    @if($dom)
+                    <p class="mb-2 text-muted small">{{ $dom->ciudad }}, {{ $dom->departamento }}</p>
+                    @if($dom->comentarios)
+                    <p class="text-muted small fst-italic mb-2">{{ $dom->comentarios }}</p>
+                    @endif
+                    @if($pedido->venta->costo_envio > 0)
+                    <p class="mb-2 small">Costo de envío: <strong>${{ number_format($pedido->venta->costo_envio, 0, ',', '.') }}</strong></p>
+                    @endif
+                    <span class="badge bg-{{ $dom->estado === 'entregado' ? 'success' : ($dom->estado === 'cancelado' ? 'danger' : 'warning') }}">
+                        {{ ucfirst($dom->estado) }}
+                    </span>
+                    @endif
+                @else
+                    <h6 class="fw-bold mb-1">🏪 Recoge en tienda</h6>
+                    <p class="text-muted small mb-0">El cliente pasará a recoger su pedido en el local (sin envío).</p>
                 @endif
-                @if($dom->zona)
-                <p class="mb-1 text-muted small">🗺 {{ $dom->zona->nombre }}</p>
-                @endif
-                <p class="mb-2 text-muted small">{{ $dom->ciudad }}, {{ $dom->departamento }}</p>
-                @if($dom->comentarios)
-                <p class="text-muted small fst-italic mb-2">{{ $dom->comentarios }}</p>
-                @endif
-                <span class="badge bg-{{ $dom->estado === 'entregado' ? 'success' : ($dom->estado === 'cancelado' ? 'danger' : 'warning') }}">
-                    {{ ucfirst($dom->estado) }}
-                </span>
             </div>
         </div>
-        @endif
 
         {{-- ══ COMPROBANTES DE PAGO ══ --}}
         <div class="card border-0 shadow-sm rounded-4">

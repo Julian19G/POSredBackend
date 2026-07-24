@@ -19,20 +19,25 @@ class InventarioController extends Controller
     {
         $request->validate([
             'variante_id'  => 'nullable|exists:variantes,id',
-            'cantidad'     => 'required|integer|min:1',
+            'cantidad'     => 'required|numeric|gt:0',
             'descripcion'  => 'nullable|string|max:255',
         ]);
 
-        $cantidad = (int) $request->cantidad;
+        $cantidad = (float) $request->cantidad;
 
         if ($request->filled('variante_id')) {
+            // Entrada por presentación: N paquetes = N × unidades de la presentación
             $variante     = Variante::findOrFail($request->variante_id);
             $unidadesBase = $variante->cantidad_por_variante * $cantidad;
-            $variante->increment('stock', $cantidad);
             $producto->increment('stock', $unidadesBase);
         } else {
+            // Entrada directa en unidades base
             $producto->increment('stock', $cantidad);
         }
+
+        // Recalcular disponibilidad de cada presentación con el nuevo stock total
+        $producto->load('variantes');
+        $producto->sincronizarStockPaquetes();
 
         Inventario::create([
             'producto_id'  => $producto->id,

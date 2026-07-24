@@ -40,10 +40,10 @@
                             </span>
                         </td>
                         <td>
-                            @if($pedido->venta->envio)
-                                <span class="badge bg-info text-dark">🚚 Sí</span>
+                            @if($pedido->venta->envio || $pedido->venta->domicilio)
+                                <span class="badge bg-info text-dark">🛵 Domicilio</span>
                             @else
-                                <span class="text-muted small">No</span>
+                                <span class="badge bg-success-subtle text-success">🏪 Recoge</span>
                             @endif
                         </td>
                         <td class="text-muted small">{{ $pedido->created_at->format('d/m/Y') }}</td>
