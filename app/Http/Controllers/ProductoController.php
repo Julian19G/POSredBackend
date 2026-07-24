@@ -10,6 +10,7 @@ use App\Models\Color;
 use App\Models\Categoria;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class ProductoController extends Controller
 {
@@ -19,7 +20,6 @@ class ProductoController extends Controller
 
         if ($esAdmin) {
             Producto::where('stock', '<=', 0)->where('activo', true)->update(['activo' => false]);
-            Producto::where('stock', '>', 0)->where('activo', false)->update(['activo' => true]);
         }
 
         $query = Producto::with(['categoria', 'sabores', 'colores', 'efectos', 'variantes']);
@@ -62,6 +62,10 @@ class ProductoController extends Controller
     public function store(Request $request)
     {
         abort_if(!auth()->user()->isAdmin(), 403, 'Solo el administrador puede crear productos.');
+
+        // Descarta filas de variante completamente vacías antes de validar
+        $this->limpiarVariantesVacias($request);
+
         $request->validate([
             'nombre'       => 'required|string|max:255',
             'descripcion'  => 'nullable|string',
@@ -95,10 +99,10 @@ class ProductoController extends Controller
 
         $producto = Producto::create($data);
 
-        // Relaciones M:N
-        $producto->sabores()->sync($request->sabores ?? []);
-        $producto->efectos()->sync($request->efectos ?? []);
-        $producto->colores()->sync($request->colores ?? []);
+        // Relaciones M:N (array_filter descarta filas dejadas en "-- Seleccionar --")
+        $producto->sabores()->sync(array_filter($request->sabores ?? []));
+        $producto->efectos()->sync(array_filter($request->efectos ?? []));
+        $producto->colores()->sync(array_filter($request->colores ?? []));
 
         // ✅ Crear variantes
         if ($request->filled('variantes')) {
@@ -141,6 +145,10 @@ class ProductoController extends Controller
     public function update(Request $request, Producto $producto)
     {
         abort_if(!auth()->user()->isAdmin(), 403, 'Solo el administrador puede editar productos.');
+
+        // Descarta filas de variante completamente vacías antes de validar
+        $this->limpiarVariantesVacias($request);
+
         $request->validate([
             'nombre'       => 'required|string|max:255',
             'descripcion'  => 'nullable|string',
@@ -148,6 +156,10 @@ class ProductoController extends Controller
             'categoria_id' => 'nullable|exists:categorias,id',
             'imagen'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'activo'       => 'nullable|boolean',
+
+            // Motivo obligatorio solo cuando se deja inactivo
+            'motivo_inactivo'         => ['nullable', 'required_if:activo,0', Rule::in(Producto::MOTIVOS_INACTIVO)],
+            'motivo_inactivo_detalle' => 'nullable|required_if:motivo_inactivo,Otro|string|max:500',
 
             'sabores'   => 'array|nullable',
             'sabores.*' => 'exists:sabores,id',
@@ -162,10 +174,24 @@ class ProductoController extends Controller
             'variantes.*.cantidad_por_variante'  => 'required|integer|min:1',
             'variantes.*.precio'                 => 'required|numeric|min:0',
             'variantes.*.stock'                  => 'required|integer|min:0',
+        ], [
+            'motivo_inactivo.required_if'         => 'Debes indicar el motivo para inhabilitar el producto.',
+            'motivo_inactivo_detalle.required_if' => 'Describe el motivo cuando seleccionas "Otro".',
         ]);
 
         $data = $request->only(['nombre', 'descripcion', 'stock', 'categoria_id']);
-        $data['activo'] = $request->has('activo');
+        $data['activo'] = $request->boolean('activo');
+
+        if ($data['activo']) {
+            // Si queda activo no guardamos motivo
+            $data['motivo_inactivo']         = null;
+            $data['motivo_inactivo_detalle'] = null;
+        } else {
+            $data['motivo_inactivo']         = $request->motivo_inactivo;
+            $data['motivo_inactivo_detalle'] = $request->motivo_inactivo === 'Otro'
+                ? $request->motivo_inactivo_detalle
+                : null;
+        }
 
         if ($request->hasFile('imagen')) {
             if ($producto->imagen && Storage::disk('public')->exists($producto->imagen)) {
@@ -176,9 +202,9 @@ class ProductoController extends Controller
 
         $producto->update($data);
 
-        $producto->sabores()->sync($request->sabores ?? []);
-        $producto->efectos()->sync($request->efectos ?? []);
-        $producto->colores()->sync($request->colores ?? []);
+        $producto->sabores()->sync(array_filter($request->sabores ?? []));
+        $producto->efectos()->sync(array_filter($request->efectos ?? []));
+        $producto->colores()->sync(array_filter($request->colores ?? []));
 
         // ✅ Sincronizar variantes
         $idsEnviados = [];
@@ -216,6 +242,33 @@ class ProductoController extends Controller
 
         return redirect()->route('productos.index')
             ->with('success', 'Producto actualizado correctamente');
+    }
+
+    /**
+     * Elimina del request las filas de variante que llegan totalmente vacías
+     * (p. ej. la fila placeholder del formulario cuando el producto no tiene
+     * variantes). Así no disparan la validación 'required' al solo cambiar
+     * el estado del producto.
+     */
+    private function limpiarVariantesVacias(Request $request): void
+    {
+        $variantes = $request->input('variantes', []);
+
+        if (!is_array($variantes)) {
+            return;
+        }
+
+        $variantes = array_filter($variantes, function ($v) {
+            $campos = ['nombre', 'cantidad_por_variante', 'precio', 'stock'];
+            foreach ($campos as $campo) {
+                if (isset($v[$campo]) && $v[$campo] !== '' && $v[$campo] !== null) {
+                    return true; // tiene al menos un dato => se conserva
+                }
+            }
+            return false; // fila vacía => se descarta
+        });
+
+        $request->merge(['variantes' => array_values($variantes)]);
     }
 
     public function destroy(Producto $producto)

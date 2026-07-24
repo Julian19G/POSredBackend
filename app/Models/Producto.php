@@ -16,8 +16,17 @@ class Producto extends Model
 
     protected $fillable = [
     'nombre', 'descripcion', 'stock',
-    'imagen', 'activo', 'categoria_id'
-   
+    'imagen', 'activo', 'categoria_id',
+    'motivo_inactivo', 'motivo_inactivo_detalle',
+    ];
+
+    /**
+     * Motivos predefinidos para inhabilitar un producto.
+     * "Otro" habilita el campo de texto libre motivo_inactivo_detalle.
+     */
+    public const MOTIVOS_INACTIVO = [
+        'Agotado por venta personal',
+        'Otro',
     ];
 
     // -----------------------------

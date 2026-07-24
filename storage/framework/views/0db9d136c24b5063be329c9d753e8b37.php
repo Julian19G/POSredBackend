@@ -27,6 +27,9 @@
                        href="<?php echo e(route('dashboard')); ?>">Dashboard</a>
                 </li>
 
+                <?php if(auth()->guard()->check()): ?>
+                <?php if(!auth()->user()->isDomiciliario()): ?>
+
                 <li class="nav-item">
                     <a class="nav-link <?php echo e(request()->routeIs('ventas.*') ? 'active fw-semibold' : ''); ?>"
                        href="<?php echo e(route('ventas.index')); ?>">Ventas</a>
@@ -50,39 +53,56 @@
                     </a>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="<?php echo e(route('productos.index')); ?>">📦 Productos</a></li>
-                        <?php if(auth()->guard()->check()): ?>
                         <?php if(auth()->user()->isAdmin()): ?>
                             <li><a class="dropdown-item" href="<?php echo e(route('productos.index', ['stock_bajo' => 1])); ?>">⚠ Stock bajo</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="<?php echo e(route('categorias.index')); ?>">🗂 Categorías</a></li>
                         <?php endif; ?>
-                        <?php endif; ?>
                     </ul>
                 </li>
 
-                
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <?php echo e(request()->routeIs('domicilios.*') ? 'active fw-semibold' : ''); ?>"
-                       href="#" role="button" data-bs-toggle="dropdown">
-                        Domicilios
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="<?php echo e(route('domicilios.index')); ?>">📋 Lista</a></li>
-                        <li><a class="dropdown-item" href="<?php echo e(route('domicilios.mapa')); ?>">🗺 Mapa de rutas</a></li>
-                    </ul>
-                </li>
+                <?php endif; ?> 
 
                 
-                <?php if(auth()->guard()->check()): ?>
+                <?php if(auth()->user()->isDomiciliario()): ?>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link <?php echo e(request()->routeIs('rutas.disponibles') ? 'active fw-semibold' : ''); ?>"
+                           href="<?php echo e(route('rutas.disponibles')); ?>">📦 Disponibles</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?php echo e(request()->routeIs('rutas.*') && !request()->routeIs('rutas.disponibles') ? 'active fw-semibold' : ''); ?>"
+                           href="<?php echo e(route('rutas.index')); ?>">🗺 Mis Rutas</a>
+                    </li>
+                <?php else: ?>
+                    
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle <?php echo e(request()->routeIs('domicilios.*') || request()->routeIs('rutas.*') ? 'active fw-semibold' : ''); ?>"
+                           href="#" role="button" data-bs-toggle="dropdown">
+                            Domicilios
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="<?php echo e(route('domicilios.index')); ?>">📋 Lista</a></li>
+                            <li><a class="dropdown-item" href="<?php echo e(route('domicilios.mapa')); ?>">🗺 Mapa</a></li>
+                            <li><a class="dropdown-item" href="<?php echo e(route('rutas.disponibles')); ?>">📦 Disponibles</a></li>
+                            <?php if(auth()->user()->isAdmin()): ?>
+                                <li><a class="dropdown-item" href="<?php echo e(route('rutas.index')); ?>">🛵 Todas las rutas</a></li>
+                            <?php endif; ?>
+                        </ul>
+                    </li>
+                <?php endif; ?>
+
+                
                 <?php if(auth()->user()->isAdmin()): ?>
 
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <?php echo e(request()->routeIs('vendedores.*') ? 'active fw-semibold' : ''); ?>"
+                    <a class="nav-link dropdown-toggle <?php echo e(request()->routeIs('vendedores.*') || request()->routeIs('domiciliarios.*') ? 'active fw-semibold' : ''); ?>"
                        href="#" role="button" data-bs-toggle="dropdown">
                         Equipo
                     </a>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="<?php echo e(route('vendedores.index')); ?>">👥 Vendedores</a></li>
+                        <li><a class="dropdown-item" href="<?php echo e(route('domiciliarios.index')); ?>">🛵 Domiciliarios</a></li>
                     </ul>
                 </li>
 
@@ -97,12 +117,6 @@
                     </ul>
                 </li>
 
-                <?php endif; ?>
-                <?php endif; ?>
-
-                
-                <?php if(auth()->guard()->check()): ?>
-                <?php if(auth()->user()->isAdmin()): ?>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle <?php echo e(request()->routeIs('users.*') ? 'active fw-semibold' : ''); ?>"
                        href="#" role="button" data-bs-toggle="dropdown">
@@ -113,14 +127,19 @@
                         <li><a class="dropdown-item" href="<?php echo e(route('register')); ?>">➕ Nuevo usuario</a></li>
                     </ul>
                 </li>
-                <?php endif; ?>
+
+                <?php endif; ?> 
                 <?php endif; ?>
 
             </ul>
 
             
             <div class="d-flex align-items-center gap-2">
-                <a href="<?php echo e(route('ventas.create')); ?>" class="btn btn-success btn-sm">➕ Nueva venta</a>
+                <?php if(auth()->guard()->check()): ?>
+                <?php if(!auth()->user()->isDomiciliario()): ?>
+                    <a href="<?php echo e(route('ventas.create')); ?>" class="btn btn-success btn-sm">➕ Nueva venta</a>
+                <?php endif; ?>
+                <?php endif; ?>
 
                 <?php if(auth()->guard()->check()): ?>
                 <div class="dropdown">

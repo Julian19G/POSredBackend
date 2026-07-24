@@ -40,8 +40,18 @@ class User extends Authenticatable
         return $this->role === 'vendedor';
     }
 
+    public function isDomiciliario(): bool
+    {
+        return $this->role === 'domiciliario';
+    }
+
     public function vendedor()
     {
         return $this->hasOne(Vendedor::class);
+    }
+
+    public function domiciliario()
+    {
+        return $this->hasOne(Domiciliario::class);
     }
 }

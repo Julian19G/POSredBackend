@@ -22,6 +22,8 @@ use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\VendedorController;
 use App\Http\Controllers\LiquidacionController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\DomiciliarioController;
+use App\Http\Controllers\RutaController;
 use Illuminate\Support\Facades\DB;
 
 // ── Auth (solo para invitados) ─────────────────────────────────
@@ -82,6 +84,17 @@ Route::middleware('auth')->group(function () {
     // Domicilios
     Route::get('domicilios/mapa', [DomicilioController::class, 'mapa'])->name('domicilios.mapa');
     Route::resource('domicilios', DomicilioController::class);
+
+    // Domiciliarios (admin CRUD)
+    Route::resource('domiciliarios', DomiciliarioController::class);
+
+    // Rutas de domicilio
+    Route::get('rutas/disponibles', [RutaController::class, 'disponibles'])->name('rutas.disponibles');
+    Route::get('rutas',             [RutaController::class, 'index'])->name('rutas.index');
+    Route::post('rutas',            [RutaController::class, 'store'])->name('rutas.store');
+    Route::get('rutas/{ruta}',      [RutaController::class, 'show'])->name('rutas.show');
+    Route::patch('rutas/domicilio/{domicilio}/recoger',  [RutaController::class, 'recoger'])->name('rutas.recoger');
+    Route::patch('rutas/domicilio/{domicilio}/entregar', [RutaController::class, 'entregar'])->name('rutas.entregar');
 
     // Pedidos
     Route::resource('pedidos', PedidoController::class)->only(['index', 'show']);

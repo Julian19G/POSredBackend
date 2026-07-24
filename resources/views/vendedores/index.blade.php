@@ -49,6 +49,8 @@
                 <td class="text-center">
                     <a href="{{ route('vendedores.show', $v) }}" class="btn btn-info btn-sm">Ver</a>
                     <a href="{{ route('vendedores.edit', $v) }}" class="btn btn-warning btn-sm">Editar</a>
+                    <button type="button" class="btn btn-outline-primary btn-sm btn-copiar-link"
+                            data-enlace="{{ $v->enlace_referido }}" title="Copiar link de referido">🔗</button>
                 </td>
             </tr>
             @empty
@@ -60,4 +62,20 @@
         </table>
     </div>
 </div>
+
+<script>
+    document.querySelectorAll('.btn-copiar-link').forEach(btn => {
+        btn.addEventListener('click', function () {
+            navigator.clipboard.writeText(this.dataset.enlace).then(() => {
+                const original = this.textContent;
+                this.textContent = '✓';
+                this.classList.replace('btn-outline-primary', 'btn-success');
+                setTimeout(() => {
+                    this.textContent = original;
+                    this.classList.replace('btn-success', 'btn-outline-primary');
+                }, 1500);
+            });
+        });
+    });
+</script>
 @endsection

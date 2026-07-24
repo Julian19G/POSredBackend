@@ -75,6 +75,50 @@
                 <option value="0" {{ old('activo', $producto->activo) == 0 ? 'selected' : '' }}>Inactivo</option>
             </select>
         </div>
+
+        {{-- Motivo de inhabilitación (solo visible cuando el estado es Inactivo) --}}
+        <div class="mb-4" id="motivo-inactivo-wrapper">
+            <label for="motivo_inactivo" class="form-label fw-semibold">Motivo de inhabilitación</label>
+            <select class="form-select" name="motivo_inactivo" id="motivo_inactivo">
+                <option value="">-- Seleccionar motivo --</option>
+                @foreach(\App\Models\Producto::MOTIVOS_INACTIVO as $motivo)
+                    <option value="{{ $motivo }}"
+                        {{ old('motivo_inactivo', $producto->motivo_inactivo) == $motivo ? 'selected' : '' }}>
+                        {{ $motivo }}
+                    </option>
+                @endforeach
+            </select>
+
+            {{-- Detalle libre (solo visible cuando el motivo es "Otro") --}}
+            <div class="mt-2" id="motivo-detalle-wrapper">
+                <label for="motivo_inactivo_detalle" class="form-label">Describe el motivo</label>
+                <textarea name="motivo_inactivo_detalle" id="motivo_inactivo_detalle"
+                          class="form-control" rows="2"
+                          placeholder="Especifica por qué se inhabilita el producto">{{ old('motivo_inactivo_detalle', $producto->motivo_inactivo_detalle) }}</textarea>
+            </div>
+        </div>
+
+        <script>
+        (function () {
+            const estado        = document.getElementById('activo');
+            const motivoWrapper = document.getElementById('motivo-inactivo-wrapper');
+            const motivoSelect  = document.getElementById('motivo_inactivo');
+            const detalleWrap   = document.getElementById('motivo-detalle-wrapper');
+
+            function toggleMotivo() {
+                motivoWrapper.style.display = estado.value === '0' ? '' : 'none';
+                toggleDetalle();
+            }
+            function toggleDetalle() {
+                const mostrar = estado.value === '0' && motivoSelect.value === 'Otro';
+                detalleWrap.style.display = mostrar ? '' : 'none';
+            }
+
+            estado.addEventListener('change', toggleMotivo);
+            motivoSelect.addEventListener('change', toggleDetalle);
+            toggleMotivo(); // estado inicial al cargar
+        })();
+        </script>
                 {{-- ✅ VARIANTES --}}
         <div class="mb-4">
             <label class="form-label fw-semibold">Variantes / Presentaciones</label>
@@ -194,6 +238,7 @@
                 @foreach(old('sabores', $producto->sabores->pluck('id')->toArray()) as $saborSeleccionado)
                     <div class="d-flex gap-2 mb-2">
                         <select name="sabores[]" class="form-select">
+                            <option value="">-- Seleccionar sabor --</option>
                             @foreach($sabores as $sabor)
                                 <option value="{{ $sabor->id }}"
                                     {{ $sabor->id == $saborSeleccionado ? 'selected' : '' }}>
@@ -209,6 +254,7 @@
                 @if($producto->sabores->count() == 0)
                     <div class="d-flex gap-2 mb-2">
                         <select name="sabores[]" class="form-select">
+                            <option value="">-- Seleccionar sabor --</option>
                             @foreach($sabores as $sabor)
                                 <option value="{{ $sabor->id }}">{{ $sabor->nombre }}</option>
                             @endforeach
@@ -233,6 +279,7 @@
 
             row.innerHTML = `
                 <select name="sabores[]" class="form-select">
+                    <option value="">-- Seleccionar sabor --</option>
                     @foreach($sabores as $sabor)
                         <option value="{{ $sabor->id }}">{{ $sabor->nombre }}</option>
                     @endforeach
@@ -265,6 +312,7 @@
                 @foreach(old('efectos', $producto->efectos->pluck('id')->toArray()) as $efectoSeleccionado)
                     <div class="d-flex gap-2 mb-2">
                         <select name="efectos[]" class="form-select">
+                            <option value="">-- Seleccionar efecto --</option>
                             @foreach($efectos as $efecto)
                                 <option value="{{ $efecto->id }}"
                                     {{ $efecto->id == $efectoSeleccionado ? 'selected' : '' }}>
@@ -279,6 +327,7 @@
                 @if($producto->efectos->count() == 0)
                     <div class="d-flex gap-2 mb-2">
                         <select name="efectos[]" class="form-select">
+                            <option value="">-- Seleccionar efecto --</option>
                             @foreach($efectos as $efecto)
                                 <option value="{{ $efecto->id }}">{{ $efecto->nombre }}</option>
                             @endforeach
@@ -303,6 +352,7 @@
 
             row.innerHTML = `
                 <select name="efectos[]" class="form-select">
+                    <option value="">-- Seleccionar efecto --</option>
                     @foreach($efectos as $efecto)
                         <option value="{{ $efecto->id }}">{{ $efecto->nombre }}</option>
                     @endforeach
@@ -335,6 +385,7 @@
                 @foreach(old('colores', $producto->colores->pluck('id')->toArray()) as $colorSeleccionado)
                     <div class="d-flex gap-2 mb-2">
                         <select name="colores[]" class="form-select">
+                            <option value="">-- Seleccionar color --</option>
                             @foreach($colores as $color)
                                 <option value="{{ $color->id }}"
                                     {{ $color->id == $colorSeleccionado ? 'selected' : '' }}>
@@ -349,6 +400,7 @@
                 @if($producto->colores->count() == 0)
                     <div class="d-flex gap-2 mb-2">
                         <select name="colores[]" class="form-select">
+                            <option value="">-- Seleccionar color --</option>
                             @foreach($colores as $color)
                                 <option value="{{ $color->id }}">{{ $color->nombre }}</option>
                             @endforeach
@@ -373,6 +425,7 @@
 
             row.innerHTML = `
                 <select name="colores[]" class="form-select">
+                    <option value="">-- Seleccionar color --</option>
                     @foreach($colores as $color)
                         <option value="{{ $color->id }}">{{ $color->nombre }}</option>
                     @endforeach

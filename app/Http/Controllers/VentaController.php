@@ -10,6 +10,7 @@ use App\Models\Cliente;
 use App\Models\Descuento;
 use App\Models\DescuentoUso;
 use App\Models\Pedido;
+use App\Models\TarifaDomicilio;
 use App\Models\Domicilio;
 use App\Models\Vendedor;
 use App\Models\Comision;
@@ -153,16 +154,31 @@ class VentaController extends Controller
             $this->registrarDetalles($venta, $request);
 
             if ($esEnvio) {
+                $tarifa = TarifaDomicilio::vigente();
+
+                $partes = array_filter([
+                    $request->direccion,
+                    $request->ciudad,
+                    $request->departamento,
+                    $request->comentarios,
+                ]);
+
                 Domicilio::create([
-                    'venta_id'      => $venta->id,
-                    'direccion'     => $request->direccion,
-                    'ciudad'        => $request->ciudad,
-                    'departamento'  => $request->departamento,
-                    'pais'          => $request->pais ?? 'Colombia',
-                    'estado'        => 'pendiente',
-                    'costo_envio'   => $costoEnvio,
-                    'fecha_entrega' => $request->fecha_entrega,
-                    'comentarios'   => $request->comentarios,
+                    'venta_id'               => $venta->id,
+                    'direccion'              => $request->direccion,
+                    'ciudad'                 => $request->ciudad,
+                    'departamento'           => $request->departamento,
+                    'pais'                   => $request->pais ?? 'Colombia',
+                    'estado'                 => 'pendiente',
+                    'costo_envio'            => $costoEnvio,
+                    'fecha_entrega'          => $request->fecha_entrega,
+                    'comentarios'            => $request->comentarios,
+                    'tarifa_id'              => $tarifa?->id,
+                    'tarifa_monto'           => $tarifa?->monto,
+                    'cobrar_en_entrega'      => true,
+                    'monto_cobrar'           => null, // se calcula al aceptar (venta.total)
+                    'instrucciones_entrega'  => implode(' — ', $partes),
+                    'instrucciones_recogida' => 'Contactar al vendedor para coordinar recogida.',
                 ]);
             }
 

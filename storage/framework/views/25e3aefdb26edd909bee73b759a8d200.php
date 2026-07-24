@@ -50,6 +50,8 @@
                 <td class="text-center">
                     <a href="<?php echo e(route('vendedores.show', $v)); ?>" class="btn btn-info btn-sm">Ver</a>
                     <a href="<?php echo e(route('vendedores.edit', $v)); ?>" class="btn btn-warning btn-sm">Editar</a>
+                    <button type="button" class="btn btn-outline-primary btn-sm btn-copiar-link"
+                            data-enlace="<?php echo e($v->enlace_referido); ?>" title="Copiar link de referido">🔗</button>
                 </td>
             </tr>
             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
@@ -61,6 +63,22 @@
         </table>
     </div>
 </div>
+
+<script>
+    document.querySelectorAll('.btn-copiar-link').forEach(btn => {
+        btn.addEventListener('click', function () {
+            navigator.clipboard.writeText(this.dataset.enlace).then(() => {
+                const original = this.textContent;
+                this.textContent = '✓';
+                this.classList.replace('btn-outline-primary', 'btn-success');
+                setTimeout(() => {
+                    this.textContent = original;
+                    this.classList.replace('btn-success', 'btn-outline-primary');
+                }, 1500);
+            });
+        });
+    });
+</script>
 <?php $__env->stopSection(); ?>
 
 <?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\Usuario\Documents\My Web Sites\POS\Backend\POSRed\resources\views/vendedores/index.blade.php ENDPATH**/ ?>

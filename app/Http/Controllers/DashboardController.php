@@ -7,6 +7,8 @@ use App\Models\Variante;
 use App\Models\DetalleVenta;
 use App\Models\Pedido;
 use App\Models\Comision;
+use App\Models\Domicilio;
+use App\Models\TarifaDomicilio;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -21,6 +23,10 @@ class DashboardController extends Controller
 
         if ($user->isAdmin()) {
             return $this->admin($hoy, $inicioMes, $inicioSemana);
+        }
+
+        if ($user->isDomiciliario()) {
+            return $this->domiciliario($user, $hoy, $inicioMes);
         }
 
         return $this->vendedor($user, $hoy, $inicioMes, $inicioSemana);
@@ -73,6 +79,43 @@ class DashboardController extends Controller
             'topProductos'      => $topProductos,
             'stockBajo'         => $stockBajo,
             'ventasRecientes'   => $ventasRecientes,
+        ]);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  DOMICILIARIO: sus rutas y entregas
+    // ─────────────────────────────────────────────────────────────
+    private function domiciliario($user, $hoy, $inicioMes)
+    {
+        $domiciliario = $user->domiciliario;
+
+        if (!$domiciliario) {
+            return view('dashboard', ['esDomiciliario' => true, 'sinDomiciliario' => true]);
+        }
+
+        $rutaActiva       = $domiciliario->rutaActiva();
+        $entregasHoy      = $domiciliario->entregasHoy();
+        $entregasMes      = $domiciliario->entregasMes();
+        $gananciaHoy      = $domiciliario->gananciaHoy();
+        $gananciaMes      = $domiciliario->gananciaMes();
+        $gananciaTotal    = $domiciliario->gananciaTotal();
+        $misActivos       = $domiciliario->domiciliosActivos();
+        $disponiblesCount = Domicilio::disponibles()->count();
+        $tarifaVigente    = TarifaDomicilio::vigente();
+
+        return view('dashboard', [
+            'esDomiciliario'   => true,
+            'sinDomiciliario'  => false,
+            'domiciliario'     => $domiciliario,
+            'rutaActiva'       => $rutaActiva,
+            'entregasHoy'      => $entregasHoy,
+            'entregasMes'      => $entregasMes,
+            'gananciaHoy'      => $gananciaHoy,
+            'gananciaMes'      => $gananciaMes,
+            'gananciaTotal'    => $gananciaTotal,
+            'misActivos'       => $misActivos,
+            'disponiblesCount' => $disponiblesCount,
+            'tarifaVigente'    => $tarifaVigente,
         ]);
     }
 

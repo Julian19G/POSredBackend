@@ -10,9 +10,188 @@
 </style>
 
 {{-- ══════════════════════════════════════════════════════
+     DASHBOARD DOMICILIARIO
+════════════════════════════════════════════════════════ --}}
+@if($esDomiciliario ?? false)
+
+@if($sinDomiciliario ?? false)
+<div class="container py-5" style="max-width:600px">
+    <div class="card border-0 shadow-sm rounded-4 text-center p-5">
+        <div class="fs-1 mb-3">⚠️</div>
+        <h4 class="fw-bold mb-2">Tu cuenta no tiene perfil de domiciliario</h4>
+        <p class="text-muted">Contacta al administrador para configurar tu perfil.</p>
+    </div>
+</div>
+@else
+
+<div class="container py-4">
+
+    {{-- Saludo + vehículo --}}
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 class="fw-bold mb-0">¡Hola, {{ $domiciliario->nombre }}! 🛵</h2>
+            <span class="text-muted">{{ $domiciliario->vehiculoLabel() }}</span>
+        </div>
+        <small class="text-muted mt-1">{{ now()->format('d/m/Y H:i') }}</small>
+    </div>
+
+    {{-- Banner tarifa vigente --}}
+    @if($tarifaVigente)
+    <div class="alert border-0 rounded-3 mb-4 py-2 px-3 d-flex align-items-center gap-2"
+         style="background:linear-gradient(135deg,#e3f2fd,#f0f7ff);">
+        <span class="fs-5">💵</span>
+        <span class="small">
+            Tarifa vigente: <strong class="text-primary">${{ number_format($tarifaVigente->monto, 0, ',', '.') }}</strong>
+            — {{ $tarifaVigente->nombre }}
+            <span class="text-muted">({{ substr($tarifaVigente->hora_inicio,0,5) }}–{{ substr($tarifaVigente->hora_fin,0,5) }})</span>
+        </span>
+    </div>
+    @endif
+
+    {{-- ── Ganancias ─────────────────────────────────────────── --}}
+    <div class="row g-3 mb-4">
+
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100 text-center py-3 px-2">
+                <div class="fw-bold text-success" style="font-size:1.3rem">
+                    ${{ number_format($gananciaHoy, 0, ',', '.') }}
+                </div>
+                <div class="small text-muted">Ganado hoy</div>
+                <div class="text-muted" style="font-size:.72rem">{{ $entregasHoy }} entrega(s)</div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100 text-center py-3 px-2">
+                <div class="fw-bold text-primary" style="font-size:1.3rem">
+                    ${{ number_format($gananciaMes, 0, ',', '.') }}
+                </div>
+                <div class="small text-muted">Este mes</div>
+                <div class="text-muted" style="font-size:.72rem">{{ $entregasMes }} entrega(s)</div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100 text-center py-3 px-2">
+                <div class="fw-bold text-secondary" style="font-size:1.3rem">
+                    ${{ number_format($gananciaTotal, 0, ',', '.') }}
+                </div>
+                <div class="small text-muted">Total acumulado</div>
+                <div class="text-muted" style="font-size:.72rem">todas las entregas</div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <a href="{{ route('rutas.disponibles') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 text-center py-3 px-2 {{ $disponiblesCount > 0 ? 'border border-warning border-2' : '' }}">
+                    <div class="fw-bold {{ $disponiblesCount > 0 ? 'text-warning' : 'text-muted' }}" style="font-size:1.5rem">
+                        {{ $disponiblesCount }}
+                    </div>
+                    <div class="small text-muted">Disponibles</div>
+                    <div class="text-muted" style="font-size:.72rem">toca para ver</div>
+                </div>
+            </a>
+        </div>
+
+    </div>
+
+    {{-- ── Domicilios activos en progreso ───────────────────── --}}
+    @if($misActivos->isNotEmpty())
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center pt-3">
+            <h6 class="mb-0 fw-bold">⚡ En progreso ({{ $misActivos->count() }})</h6>
+            @if($rutaActiva)
+            <a href="{{ route('rutas.show', $rutaActiva) }}" class="btn btn-sm btn-warning">Ver ruta →</a>
+            @endif
+        </div>
+        <div class="card-body pt-1 pb-2">
+            @foreach($misActivos as $dom)
+            @php
+                $ruta = $dom->ruta;
+            @endphp
+            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <div style="min-width:0">
+                    <div class="fw-semibold text-truncate">{{ $dom->venta->cliente->nombre ?? '—' }}</div>
+                    <div class="text-muted small text-truncate">{{ $dom->direccion }}</div>
+                    @if($ruta)
+                    <div class="text-muted" style="font-size:.72rem">{{ $ruta->tipoLabel() }} #{{ $ruta->id }}</div>
+                    @endif
+                </div>
+                <div class="text-end ms-3 flex-shrink-0">
+                    <div class="fw-bold text-success small">${{ number_format($dom->tarifa_monto, 0, ',', '.') }}</div>
+                    <span class="badge bg-{{ $dom->estadoColor() }}">{{ $dom->estadoLabel() }}</span>
+                    @if($dom->cobrar_en_entrega)
+                    <div class="text-warning" style="font-size:.7rem">💵 cobrar</div>
+                    @endif
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
+    {{-- ── Ruta activa --}}
+    @if($rutaActiva)
+    <div class="card border-0 shadow-sm rounded-3 mb-4 border-start border-4 border-warning">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0 fw-bold">{{ $rutaActiva->tipoLabel() }} activa #{{ $rutaActiva->id }}</h6>
+                <a href="{{ route('rutas.show', $rutaActiva) }}" class="btn btn-warning btn-sm">Continuar →</a>
+            </div>
+            @php
+                $dEntregados = $rutaActiva->domicilios->where('estado', 'entregado')->count();
+                $dTotal      = $rutaActiva->domicilios->count();
+                $pctRuta     = $dTotal > 0 ? intval($dEntregados / $dTotal * 100) : 0;
+            @endphp
+            <div class="progress mb-1" style="height:8px">
+                <div class="progress-bar bg-success" style="width:{{ $pctRuta }}%"></div>
+            </div>
+            <small class="text-muted">{{ $dEntregados }}/{{ $dTotal }} entregados</small>
+        </div>
+    </div>
+    @elseif($misActivos->isEmpty())
+    {{-- Sin actividad: CTA --}}
+    <div class="card border-0 shadow-sm rounded-3 mb-4 text-center p-5">
+        <div class="fs-1 mb-2">📦</div>
+        <h5 class="fw-bold">¿Listo para rodar?</h5>
+        <p class="text-muted mb-3">
+            Hay <strong class="{{ $disponiblesCount > 0 ? 'text-success' : 'text-muted' }}">
+                {{ $disponiblesCount }} domicilio(s)
+            </strong> esperando.
+        </p>
+        <a href="{{ route('rutas.disponibles') }}" class="btn btn-success btn-lg">
+            Ver domicilios disponibles
+        </a>
+    </div>
+    @endif
+
+    {{-- Accesos rápidos --}}
+    <div class="row g-3">
+        <div class="col-6">
+            <a href="{{ route('rutas.disponibles') }}" class="card border-0 shadow-sm text-decoration-none h-100">
+                <div class="card-body text-center py-4">
+                    <div class="fs-2 mb-1">📦</div>
+                    <div class="fw-semibold">Disponibles</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6">
+            <a href="{{ route('rutas.index') }}" class="card border-0 shadow-sm text-decoration-none h-100">
+                <div class="card-body text-center py-4">
+                    <div class="fs-2 mb-1">🗺</div>
+                    <div class="fw-semibold">Mis rutas</div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+</div>
+@endif
+
+{{-- ══════════════════════════════════════════════════════
      SIN VENDEDOR VINCULADO
 ════════════════════════════════════════════════════════ --}}
-@if(!$esAdmin && ($sinVendedor ?? false))
+@elseif(!$esAdmin && ($sinVendedor ?? false))
 <div class="container py-5" style="max-width:600px">
     <div class="card border-0 shadow-sm rounded-4 text-center p-5">
         <div class="fs-1 mb-3">⚠️</div>

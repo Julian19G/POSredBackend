@@ -13,6 +13,7 @@ class Vendedor extends Model
 
     protected $fillable = [
         'user_id',
+        'codigo',
         'nombre',
         'telefono',
         'whatsapp',
@@ -27,6 +28,48 @@ class Vendedor extends Model
         'activo'               => 'boolean',
         'comision_porcentaje'  => 'float',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($vendedor) {
+            if (empty($vendedor->codigo)) {
+                $vendedor->codigo = static::generarCodigoUnico();
+            }
+        });
+    }
+
+    /**
+     * Genera un código de referido aleatorio, opaco y único.
+     * Usa un alfabeto sin caracteres ambiguos (sin 0/O/1/I/l).
+     */
+    public static function generarCodigoUnico(int $longitud = 10): string
+    {
+        $alfabeto = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+
+        do {
+            $codigo = '';
+            for ($i = 0; $i < $longitud; $i++) {
+                $codigo .= $alfabeto[random_int(0, strlen($alfabeto) - 1)];
+            }
+        } while (static::where('codigo', $codigo)->exists());
+
+        return $codigo;
+    }
+
+    /**
+     * Link completo de referido que comparte el vendedor.
+     */
+    public function getEnlaceReferidoAttribute(): string
+    {
+        return rtrim(config('app.frontend_url'), '/') . '/' . $this->codigo . '/login';
+    }
+
+    public function scopePorCodigo($query, ?string $codigo)
+    {
+        return $query->where('codigo', $codigo);
+    }
 
     public function user()
     {

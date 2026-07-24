@@ -56,6 +56,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Frontend URL (tienda SPA)
+    |--------------------------------------------------------------------------
+    |
+    | Base de la tienda del cliente (SPA). Se usa para construir los links de
+    | referido de los vendedores: {frontend_url}/{codigo}/home
+    |
+    */
+
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

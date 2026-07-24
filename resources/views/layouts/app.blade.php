@@ -27,6 +27,9 @@
                        href="{{ route('dashboard') }}">Dashboard</a>
                 </li>
 
+                @auth
+                @if(!auth()->user()->isDomiciliario())
+
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('ventas.*') ? 'active fw-semibold' : '' }}"
                        href="{{ route('ventas.index') }}">Ventas</a>
@@ -42,7 +45,7 @@
                        href="{{ route('clientes.index') }}">Clientes</a>
                 </li>
 
-                {{-- Dropdown: Catálogo --}}
+                {{-- Dropdown: Catálogo (no domiciliarios) --}}
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle {{ request()->routeIs('productos.*') || request()->routeIs('inventarios.*') || request()->routeIs('categorias.*') ? 'active fw-semibold' : '' }}"
                        href="#" role="button" data-bs-toggle="dropdown">
@@ -50,39 +53,56 @@
                     </a>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="{{ route('productos.index') }}">📦 Productos</a></li>
-                        @auth
                         @if(auth()->user()->isAdmin())
                             <li><a class="dropdown-item" href="{{ route('productos.index', ['stock_bajo' => 1]) }}">⚠ Stock bajo</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ route('categorias.index') }}">🗂 Categorías</a></li>
                         @endif
-                        @endauth
                     </ul>
                 </li>
 
-                {{-- Dropdown: Domicilios --}}
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle {{ request()->routeIs('domicilios.*') ? 'active fw-semibold' : '' }}"
-                       href="#" role="button" data-bs-toggle="dropdown">
-                        Domicilios
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{{ route('domicilios.index') }}">📋 Lista</a></li>
-                        <li><a class="dropdown-item" href="{{ route('domicilios.mapa') }}">🗺 Mapa de rutas</a></li>
-                    </ul>
-                </li>
+                @endif {{-- !isDomiciliario --}}
+
+                {{-- Dropdown: Domicilios / Rutas --}}
+                @if(auth()->user()->isDomiciliario())
+                    {{-- Domiciliario: solo ve sus rutas y disponibles --}}
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('rutas.disponibles') ? 'active fw-semibold' : '' }}"
+                           href="{{ route('rutas.disponibles') }}">📦 Disponibles</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('rutas.*') && !request()->routeIs('rutas.disponibles') ? 'active fw-semibold' : '' }}"
+                           href="{{ route('rutas.index') }}">🗺 Mis Rutas</a>
+                    </li>
+                @else
+                    {{-- Admin/Vendedor: sección Domicilios --}}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {{ request()->routeIs('domicilios.*') || request()->routeIs('rutas.*') ? 'active fw-semibold' : '' }}"
+                           href="#" role="button" data-bs-toggle="dropdown">
+                            Domicilios
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ route('domicilios.index') }}">📋 Lista</a></li>
+                            <li><a class="dropdown-item" href="{{ route('domicilios.mapa') }}">🗺 Mapa</a></li>
+                            <li><a class="dropdown-item" href="{{ route('rutas.disponibles') }}">📦 Disponibles</a></li>
+                            @if(auth()->user()->isAdmin())
+                                <li><a class="dropdown-item" href="{{ route('rutas.index') }}">🛵 Todas las rutas</a></li>
+                            @endif
+                        </ul>
+                    </li>
+                @endif
 
                 {{-- Equipo y Config: solo admins --}}
-                @auth
                 @if(auth()->user()->isAdmin())
 
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle {{ request()->routeIs('vendedores.*') ? 'active fw-semibold' : '' }}"
+                    <a class="nav-link dropdown-toggle {{ request()->routeIs('vendedores.*') || request()->routeIs('domiciliarios.*') ? 'active fw-semibold' : '' }}"
                        href="#" role="button" data-bs-toggle="dropdown">
                         Equipo
                     </a>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="{{ route('vendedores.index') }}">👥 Vendedores</a></li>
+                        <li><a class="dropdown-item" href="{{ route('domiciliarios.index') }}">🛵 Domiciliarios</a></li>
                     </ul>
                 </li>
 
@@ -97,12 +117,6 @@
                     </ul>
                 </li>
 
-                @endif
-                @endauth
-
-                {{-- Dropdown: Admin (solo admins) --}}
-                @auth
-                @if(auth()->user()->isAdmin())
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle {{ request()->routeIs('users.*') ? 'active fw-semibold' : '' }}"
                        href="#" role="button" data-bs-toggle="dropdown">
@@ -113,14 +127,19 @@
                         <li><a class="dropdown-item" href="{{ route('register') }}">➕ Nuevo usuario</a></li>
                     </ul>
                 </li>
-                @endif
+
+                @endif {{-- isAdmin --}}
                 @endauth
 
             </ul>
 
             {{-- Botón rápido + usuario --}}
             <div class="d-flex align-items-center gap-2">
-                <a href="{{ route('ventas.create') }}" class="btn btn-success btn-sm">➕ Nueva venta</a>
+                @auth
+                @if(!auth()->user()->isDomiciliario())
+                    <a href="{{ route('ventas.create') }}" class="btn btn-success btn-sm">➕ Nueva venta</a>
+                @endif
+                @endauth
 
                 @auth
                 <div class="dropdown">

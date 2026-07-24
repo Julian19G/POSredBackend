@@ -66,6 +66,7 @@
             <div id="sabores-container">
                 <div class="d-flex gap-2 mb-2">
                     <select name="sabores[]" class="form-select">
+                        <option value="">-- Seleccionar sabor --</option>
                         @foreach($sabores as $sabor)
                             <option value="{{ $sabor->id }}">{{ $sabor->nombre }}</option>
                         @endforeach
@@ -82,6 +83,7 @@
             <div id="efectos-container">
                 <div class="d-flex gap-2 mb-2">
                     <select name="efectos[]" class="form-select">
+                        <option value="">-- Seleccionar efecto --</option>
                         @foreach($efectos as $efecto)
                             <option value="{{ $efecto->id }}">{{ $efecto->nombre }}</option>
                         @endforeach
@@ -98,6 +100,7 @@
             <div id="colores-container">
                 <div class="d-flex gap-2 mb-2">
                     <select name="colores[]" class="form-select">
+                        <option value="">-- Seleccionar color --</option>
                         @foreach($colores as $color)
                             <option value="{{ $color->id }}">{{ $color->nombre }}</option>
                         @endforeach
@@ -157,6 +160,7 @@
         row.classList.add('d-flex', 'gap-2', 'mb-2');
         row.innerHTML = `
             <select name="sabores[]" class="form-select">
+                <option value="">-- Seleccionar sabor --</option>
                 @foreach($sabores as $sabor)
                     <option value="{{ $sabor->id }}">{{ $sabor->nombre }}</option>
                 @endforeach
@@ -175,6 +179,7 @@
         row.classList.add('d-flex', 'gap-2', 'mb-2');
         row.innerHTML = `
             <select name="efectos[]" class="form-select">
+                <option value="">-- Seleccionar efecto --</option>
                 @foreach($efectos as $efecto)
                     <option value="{{ $efecto->id }}">{{ $efecto->nombre }}</option>
                 @endforeach
@@ -193,6 +198,7 @@
         row.classList.add('d-flex', 'gap-2', 'mb-2');
         row.innerHTML = `
             <select name="colores[]" class="form-select">
+                <option value="">-- Seleccionar color --</option>
                 @foreach($colores as $color)
                     <option value="{{ $color->id }}">{{ $color->nombre }}</option>
                 @endforeach
