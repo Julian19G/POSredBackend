@@ -24,6 +24,12 @@ return new class extends Migration
             $table->integer('uso_cliente_maximo')->nullable(); // máximo por cliente
             $table->timestamps();
         });
+
+        Schema::table('ventas', function (Blueprint $table) {
+            $table->foreign('descuento_id')
+                ->references('id')->on('descuentos')
+                ->nullOnDelete();
+        });
     }
 
     /**

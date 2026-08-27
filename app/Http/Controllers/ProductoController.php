@@ -59,10 +59,28 @@ class ProductoController extends Controller
         $presentaciones = \App\Models\Presentacion::activas()->orderBy('cantidad')->get();
         $tiposFlor      = \App\Models\TipoFlor::activos()->orderBy('nombre')->get();
         $floresId       = Categoria::where('slug', 'flores')->value('id');
+        $productosPlantilla = Producto::with('variantes:id,producto_id,nombre,cantidad_por_variante,precio')
+            ->whereHas('variantes')
+            ->orderBy('nombre')
+            ->get(['id', 'nombre']);
+        $productosPlantillaData = $productosPlantilla->map(function ($producto) {
+            return [
+                'id' => $producto->id,
+                'nombre' => $producto->nombre,
+                'variantes' => $producto->variantes->map(function ($variante) {
+                    return [
+                        'nombre' => $variante->nombre,
+                        'cantidad' => $variante->cantidad_por_variante,
+                        'precio' => $variante->precio,
+                    ];
+                })->values(),
+            ];
+        })->values();
 
         return view('productos.create', compact(
             'categorias', 'sabores', 'efectos', 'colores',
-            'presentaciones', 'tiposFlor', 'floresId'
+            'presentaciones', 'tiposFlor', 'floresId', 'productosPlantilla',
+            'productosPlantillaData'
         ));
     }
 

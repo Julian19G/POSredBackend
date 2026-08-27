@@ -220,6 +220,83 @@ Route::get('/ref/{codigo}', function ($codigo) {
     ]);
 });
 
+// Calcula el precio real que se cobrará (recargo de vendedor + tarifa de
+// domicilio vigente en BD) SIN crear el pedido, tocar stock ni el cliente.
+// El frontend debe llamar esto antes de dejar confirmar el pago, para no
+// mostrar nunca un total que luego no coincida con el que arma /checkout.
+Route::post('/checkout/cotizar', function (Request $request) {
+    $request->validate([
+        'items'                => 'required|array|min:1',
+        'items.*.variante_id'  => 'required|integer|exists:variantes,id',
+        'items.*.cantidad'     => 'required|integer|min:1',
+        'envio'                => 'boolean',
+        'direccion'            => 'nullable|string|max:255',
+        'barrio'               => 'nullable|string|max:100',
+        'telefono'             => 'nullable|string|max:30',
+        'codigo_vendedor'      => 'nullable|string|max:16',
+    ]);
+
+    // Misma prioridad de atribución que /checkout, pero de solo lectura:
+    // vendedor ya asignado al cliente (si ya existe) tiene prioridad sobre
+    // el vendedor del código actual en el link.
+    $vendedorCodigo = $request->filled('codigo_vendedor')
+        ? Vendedor::activos()->porCodigo($request->codigo_vendedor)->first()
+        : null;
+
+    $vendedor = $vendedorCodigo;
+    if ($request->filled('telefono')) {
+        $clienteExistente = Cliente::where('telefono', $request->telefono)->first();
+        if ($clienteExistente && $clienteExistente->vendedor_id) {
+            $vendedor = Vendedor::find($clienteExistente->vendedor_id) ?? $vendedorCodigo;
+        }
+    }
+
+    $markup = ($vendedor && $vendedor->comision_porcentaje > 0)
+        ? $vendedor->comision_porcentaje / 100
+        : 0;
+
+    // Precios SIEMPRE desde la variante real en BD, igual que en /checkout.
+    $subtotalFinal = 0;
+    $itemsCotizados = [];
+    foreach ($request->items as $item) {
+        $variante = Variante::find($item['variante_id']);
+        if (!$variante) {
+            abort(422, 'Uno de los productos de tu carrito ya no está disponible.');
+        }
+        $precioBase  = (float) $variante->precio;
+        $cant        = (int) $item['cantidad'];
+        $precioFinal = round($precioBase * (1 + $markup));
+        $subtotalFinal += $precioFinal * $cant;
+
+        // Precio real por producto: el frontend lo necesita para que la
+        // lista de items no muestre un precio distinto al que se ve en el
+        // subtotal (p.ej. cuando el recargo viene de un vendedor asignado
+        // por teléfono en BD, que el frontend no puede calcular por su cuenta).
+        $itemsCotizados[] = [
+            'variante_id'     => $variante->id,
+            'precio_unitario' => $precioFinal,
+            'subtotal'        => $precioFinal * $cant,
+        ];
+    }
+
+    $esEnvio    = $request->boolean('envio');
+    $tarifa     = $esEnvio ? TarifaDomicilio::vigente() : null;
+    $envioBase  = $tarifa ? (float) $tarifa->monto : 0;
+    $envioFinal = round($envioBase * (1 + $markup));
+
+    return response()->json([
+        'items'           => $itemsCotizados,
+        'subtotal'        => round($subtotalFinal, 0),
+        'costo_domicilio' => $esEnvio ? $envioFinal : 0,
+        // Ajusta 'nombre' al campo real de tu modelo TarifaDomicilio si se
+        // llama distinto (p.ej. 'tipo' o 'etiqueta'). Si no existe, queda null
+        // y el frontend simplemente no muestra el badge.
+        'tarifa_nombre'   => $tarifa->nombre ?? $tarifa->tipo ?? null,
+        'recargos'        => [],
+        'total'           => round($subtotalFinal + ($esEnvio ? $envioFinal : 0), 0),
+    ]);
+});
+
 Route::post('/checkout', function (Request $request) {
     $request->validate([
         'cliente.nombre'          => 'required|string|max:150',
@@ -238,6 +315,11 @@ Route::post('/checkout', function (Request $request) {
         'metodo_pago'             => 'required|in:efectivo,transferencia,cripto,tarjeta,otro',
         'notas'                   => 'nullable|string|max:500',
         'codigo_vendedor'         => 'nullable|string|max:16',
+        // Total que el cliente vio y aceptó explícitamente en /checkout/cotizar.
+        // Si el total real cambia entre la cotización y este submit (p.ej. cruzó
+        // el horario nocturno), rechazamos en vez de cobrar un precio distinto
+        // al que el cliente confirmó.
+        'total_aceptado'          => 'nullable|numeric',
     ]);
 
     return DB::transaction(function () use ($request) {
@@ -310,6 +392,15 @@ Route::post('/checkout', function (Request $request) {
         $tarifa     = $esEnvio ? TarifaDomicilio::vigente() : null;
         $envioBase  = $tarifa ? (float) $tarifa->monto : 0;
         $envioFinal = round($envioBase * (1 + $markup));   // el envío también lleva recargo
+
+        // Si el cliente aceptó un total en /checkout/cotizar, verificamos que
+        // el precio real (calculado ahora mismo) siga siendo el mismo. Si
+        // cambió, no creamos el pedido: se lo devolvemos para que confirme
+        // el nuevo total en vez de cobrarle algo distinto a lo que vio.
+        $totalCalculado = round($subtotalFinal + $envioFinal, 0);
+        if ($request->filled('total_aceptado') && abs($totalCalculado - (float) $request->total_aceptado) > 1) {
+            abort(409, 'El total cambió desde que lo confirmaste. Revisa el nuevo total antes de continuar.');
+        }
 
         $venta = Venta::create([
             'cliente_id'       => $cliente->id,
@@ -508,6 +599,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/clientes/me', function (Request $request) {
         $c = $request->user();
+
+        // Vendedor ya asignado a este cliente en BD (puede venir de una
+        // sesión/dispositivo distinto al actual, o de antes de que existiera
+        // el sistema de referidos). El frontend usa esto para sincronizar el
+        // recargo en localStorage apenas carga la sesión, sin depender de
+        // que el cliente haya entrado por el link del vendedor en este
+        // navegador.
+        $vendedor = $c->vendedor_id ? Vendedor::find($c->vendedor_id) : null;
+
         return response()->json([
             'id'       => $c->id,
             'nombre'   => $c->nombre,
@@ -515,6 +615,11 @@ Route::middleware('auth:sanctum')->group(function () {
             'telefono' => $c->telefono,
             'direccion'=> $c->direccion,
             'barrio'   => $c->barrio,
+            'vendedor' => ($vendedor && $vendedor->comision_porcentaje > 0) ? [
+                'codigo'             => $vendedor->codigo,
+                'nombre'             => $vendedor->nombre,
+                'recargo_porcentaje' => (float) $vendedor->comision_porcentaje,
+            ] : null,
         ]);
     });
 

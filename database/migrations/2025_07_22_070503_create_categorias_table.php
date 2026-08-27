@@ -20,6 +20,12 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->timestamps();
         });
+
+        Schema::table('productos', function (Blueprint $table) {
+            $table->foreign('categoria_id')
+                ->references('id')->on('categorias')
+                ->nullOnDelete();
+        });
     }
 
     /**

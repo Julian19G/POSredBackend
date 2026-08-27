@@ -288,6 +288,8 @@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+
     <style>
         html { transition: background-color .2s ease; }
         body { transition: background-color .2s ease, color .2s ease; }

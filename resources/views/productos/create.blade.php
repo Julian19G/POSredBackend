@@ -142,6 +142,11 @@
         background: var(--panel-bg-alt);
         color: var(--text-primary);
     }
+    .stepper { display:flex; gap:.5rem; margin-bottom:1.25rem; }
+    .stepper-item { flex:1; padding:.7rem .8rem; border:1px solid var(--panel-border); border-radius:10px; color:var(--text-muted); font-size:.8rem; }
+    .stepper-item.active { border-color:var(--accent); color:var(--text-primary); background:var(--accent-soft); }
+    .stepper-item small { display:block; color:inherit; opacity:.7; }
+    .step-pane.d-none { display:none !important; }
 </style>
 
 <div class="container py-4" style="max-width:880px">
@@ -154,10 +159,17 @@
         <a href="{{ route('productos.index') }}" class="btn btn-outline-secondary btn-sm">← Volver</a>
     </div>
 
-    <form action="{{ route('productos.store') }}" method="POST" enctype="multipart/form-data">
+    <div class="stepper" aria-label="Pasos del producto">
+        <div class="stepper-item active" data-step-indicator="1"><strong>1. Datos</strong><small>Información y stock</small></div>
+        <div class="stepper-item" data-step-indicator="2"><strong>2. Atributos</strong><small>Características</small></div>
+        <div class="stepper-item" data-step-indicator="3"><strong>3. Presentaciones</strong><small>Precios y revisión</small></div>
+    </div>
+
+    <form action="{{ route('productos.store') }}" method="POST" enctype="multipart/form-data" id="producto-form">
         @csrf
         <div class="prod-card mb-3"><div class="card-body">
 
+        <section class="step-pane" data-step="1">
         <div class="prod-sec">📝 Información básica</div>
 
         <div class="mb-3">
@@ -220,7 +232,9 @@
                 <option value="0" {{ old('activo') == 0 ? 'selected' : '' }}>Inactivo</option>
             </select>
         </div>
+        </section>
 
+        <section class="step-pane d-none" data-step="2">
         <div class="prod-sec divider">✨ Atributos</div>
 
         {{-- SABORES --}}
@@ -273,11 +287,28 @@
             </div>
             <button type="button" id="add-color" class="btn btn-primary btn-sm">Agregar color</button>
         </div>
+        </section>
 
+        <section class="step-pane d-none" data-step="3">
         <div class="prod-sec divider">🏷️ Presentaciones y precios</div>
 
         {{-- ✅ PRESENTACIONES / VARIANTES --}}
         <div class="mb-2">
+            @if($productosPlantilla->count())
+            <div class="border rounded p-3 mb-3" style="border-color:var(--panel-border) !important;background:var(--panel-bg-alt)">
+                <label for="producto-plantilla" class="form-label">Copiar de otro producto</label>
+                <div class="d-flex gap-2">
+                    <select id="producto-plantilla" class="form-select">
+                        <option value="">-- Selecciona un producto --</option>
+                        @foreach($productosPlantilla as $plantilla)
+                            <option value="{{ $plantilla->id }}">{{ $plantilla->nombre }} ({{ $plantilla->variantes->count() }} presentaciones)</option>
+                        @endforeach
+                    </select>
+                    <button type="button" id="copiar-plantilla" class="btn btn-primary text-nowrap">Copiar</button>
+                </div>
+                <small class="text-muted d-block mt-2">Copia sus presentaciones, cantidades y precios. Podrás editarlos antes de guardar.</small>
+            </div>
+            @endif
             @if($presentaciones->count())
             <div class="mb-3 d-flex flex-wrap gap-2">
                 @foreach($presentaciones as $pre)
@@ -298,11 +329,14 @@
                 ➕ Agregar presentación manual
             </button>
         </div>
+        </section>
 
         </div></div>{{-- /card-body /prod-card --}}
 
         <div class="prod-actions d-flex gap-2">
-            <button type="submit" class="btn btn-success px-4">💾 Guardar producto</button>
+            <button type="button" id="step-prev" class="btn btn-outline-secondary px-4 d-none">← Anterior</button>
+            <button type="button" id="step-next" class="btn btn-primary px-4">Siguiente →</button>
+            <button type="submit" id="step-submit" class="btn btn-success px-4 d-none">💾 Guardar producto</button>
             <a href="{{ route('productos.index') }}" class="btn btn-outline-secondary px-4">Cancelar</a>
         </div>
     </form>
@@ -388,6 +422,7 @@
     // ── Presentaciones / Variantes ─────────────────────────
     let varianteIndex = 0;
     const contVar = document.getElementById('variantes-container');
+    const productosPlantilla = @json($productosPlantillaData);
 
     function agregarFila({ nombre = '', cantidad = '', fijo = false, presetKey = null } = {}) {
         const i = varianteIndex++;
@@ -448,6 +483,20 @@
 
     document.getElementById('add-variante').addEventListener('click', () => agregarFila());
 
+    document.getElementById('copiar-plantilla')?.addEventListener('click', () => {
+        const id = document.getElementById('producto-plantilla').value;
+        const plantilla = productosPlantilla.find(producto => String(producto.id) === id);
+        if (!plantilla) return;
+
+        contVar.innerHTML = '';
+        document.querySelectorAll('.preset-check').forEach(check => check.checked = false);
+        varianteIndex = 0;
+        plantilla.variantes.forEach(variante => {
+            const row = agregarFila({ nombre: variante.nombre, cantidad: variante.cantidad });
+            row.querySelector('input[name$="[precio]"]').value = variante.precio;
+        });
+    });
+
     document.querySelectorAll('.preset-check').forEach(chk => {
         const key = chk.dataset.nombre + '|' + chk.dataset.cantidad;
         chk.dataset.key = key;
@@ -470,5 +519,42 @@
         tipoWrap.style.display = (catSel.value && catSel.value === floresId) ? '' : 'none';
     }
     if (catSel) { catSel.addEventListener('change', toggleTipoFlor); toggleTipoFlor(); }
+
+    let currentStep = 1;
+    const panes = document.querySelectorAll('.step-pane');
+    const indicators = document.querySelectorAll('[data-step-indicator]');
+    const previousButton = document.getElementById('step-prev');
+    const nextButton = document.getElementById('step-next');
+    const submitButton = document.getElementById('step-submit');
+    const form = document.getElementById('producto-form');
+
+    function showStep(step) {
+        currentStep = step;
+        panes.forEach(pane => pane.classList.toggle('d-none', Number(pane.dataset.step) !== step));
+        indicators.forEach(indicator => indicator.classList.toggle('active', Number(indicator.dataset.stepIndicator) === step));
+        previousButton.classList.toggle('d-none', step === 1);
+        nextButton.classList.toggle('d-none', step === 3);
+        submitButton.classList.toggle('d-none', step !== 3);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function validateCurrentStep() {
+        const fields = document.querySelector('[data-step="' + currentStep + '"]').querySelectorAll('input, select, textarea');
+        for (const field of fields) {
+            if (!field.checkValidity()) {
+                field.reportValidity();
+                return false;
+            }
+        }
+        return true;
+    }
+
+    nextButton.addEventListener('click', () => {
+        if (validateCurrentStep()) showStep(currentStep + 1);
+    });
+    previousButton.addEventListener('click', () => showStep(currentStep - 1));
+    form.addEventListener('submit', event => {
+        if (!validateCurrentStep()) event.preventDefault();
+    });
 </script>
 @endsection
