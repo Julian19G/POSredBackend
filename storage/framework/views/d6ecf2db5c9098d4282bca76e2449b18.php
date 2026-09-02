@@ -42,7 +42,7 @@
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <div>
                     <span class="badge bg-secondary me-1"><?php echo e($i + 1); ?></span>
-                    <strong class="fs-6"><?php echo e($d->venta->cliente->nombre ?? '—'); ?></strong>
+                    <strong class="fs-6"><?php echo e($d->nombre_cliente); ?></strong>
                     <?php if($d->tipo === 'express'): ?>
                         <span class="badge bg-warning text-dark ms-1">⚡ Express</span>
                     <?php endif; ?>
@@ -62,13 +62,13 @@
                     <div class="p-3 rounded-2" style="background:#e8f5e9">
                         <div class="text-muted small fw-bold mb-1">🏠 ENTREGA</div>
                         <div class="small"><?php echo e($d->instrucciones_entrega ?? $d->direccion); ?></div>
-                        <?php if($d->venta->cliente->telefono ?? null): ?>
+                        <?php if($d->telefono_cliente): ?>
                             <div class="small text-primary mt-1">
-                                📞 <?php echo e($d->venta->cliente->telefono); ?>
+                                📞 <?php echo e($d->telefono_cliente); ?>
 
                             </div>
                         <?php endif; ?>
-                        <?php if($d->venta->cliente->whatsapp ?? null): ?>
+                        <?php if($d->venta?->cliente?->whatsapp): ?>
                             <a href="https://wa.me/57<?php echo e(preg_replace('/\D/', '', $d->venta->cliente->whatsapp)); ?>"
                                target="_blank"
                                class="btn btn-sm btn-outline-success mt-1" style="font-size:.75rem">
@@ -118,7 +118,7 @@
                             <form action="<?php echo e(route('rutas.entregar', $d->id)); ?>" method="POST">
                                 <?php echo csrf_field(); ?> <?php echo method_field('PATCH'); ?>
                                 <div class="modal-header">
-                                    <h5 class="modal-title">Confirmar entrega — <?php echo e($d->venta->cliente->nombre ?? ''); ?></h5>
+                                    <h5 class="modal-title">Confirmar entrega — <?php echo e($d->nombre_cliente); ?></h5>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                 </div>
                                 <div class="modal-body">

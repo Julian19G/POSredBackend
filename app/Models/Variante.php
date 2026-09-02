@@ -38,3 +38,5 @@ class Variante extends Model
         });
     }
 }
+
+

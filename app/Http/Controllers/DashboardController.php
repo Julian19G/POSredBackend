@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Venta;
 use App\Models\Variante;
+use App\Models\Producto;
 use App\Models\DetalleVenta;
 use App\Models\Pedido;
 use App\Models\Comision;
@@ -25,7 +26,7 @@ class DashboardController extends Controller
             return $this->admin($hoy, $inicioMes, $inicioSemana);
         }
 
-        if ($user->isDomiciliario()) {
+        if ($user->isDomiciliario() && !$user->vendedor) {
             return $this->domiciliario($user, $hoy, $inicioMes);
         }
 
@@ -48,16 +49,26 @@ class DashboardController extends Controller
 
         $comisionesTotales = Comision::where('estado', 'pendiente')->sum('monto_comision');
 
-        // Ganancia extra de la tienda: recargo del envío (referidos) que se retiene.
-        // Es la diferencia entre lo cobrado (costo_envio) y la tarifa base (tarifa_monto).
-        $gananciaEnviosMes = Domicilio::where('created_at', '>=', $inicioMes)
-            ->whereNotNull('tarifa_monto')
-            ->whereColumn('costo_envio', '>', 'tarifa_monto')
-            ->sum(DB::raw('costo_envio - tarifa_monto'));
+        $domiciliosMes = Domicilio::where('created_at', '>=', $inicioMes);
+        $domiciliosEntregadosMes = (clone $domiciliosMes)->where('estado', 'entregado');
+        $generadoDomiciliariosMes = (float) $domiciliosEntregadosMes->sum('tarifa_monto');
+        $totalCobradoDomiciliosMes = (float) (clone $domiciliosEntregadosMes)->sum('costo_envio');
+        $domiciliosExternosMes = (clone $domiciliosMes)->where('origen', 'externa')->count();
 
-        $gananciaEnviosTotal = Domicilio::whereNotNull('tarifa_monto')
-            ->whereColumn('costo_envio', '>', 'tarifa_monto')
-            ->sum(DB::raw('costo_envio - tarifa_monto'));
+        $ventasBrutasHoy = (float) Venta::whereDate('created_at', $hoy)->sum('total');
+        $ventasBrutasMes = (float) Venta::where('created_at', '>=', $inicioMes)->sum('total');
+        $pagosConfirmadosMes = (float) DB::table('pagos')
+            ->where('estado', 'confirmado')->where('created_at', '>=', $inicioMes)->sum('monto');
+
+        $chartLabels = [];
+        $chartVentas = [];
+        $chartDomicilios = [];
+        for ($date = Carbon::today()->subDays(13); $date <= Carbon::today(); $date->addDay()) {
+            $label = $date->format('d/m');
+            $chartLabels[] = $label;
+            $chartVentas[] = (float) Venta::whereDate('created_at', $date)->sum('total');
+            $chartDomicilios[] = (float) Domicilio::whereDate('fecha_entrega_real', $date)->where('estado', 'entregado')->sum('tarifa_monto');
+        }
 
         $topProductos = DetalleVenta::select(
                 'nombre_producto',
@@ -87,8 +98,20 @@ class DashboardController extends Controller
             'pendienteCobro'    => $pendienteCobro,
             'pedidosPendientes'   => $pedidosPendientes,
             'comisionesTotales'   => $comisionesTotales,
-            'gananciaEnviosMes'   => $gananciaEnviosMes,
-            'gananciaEnviosTotal' => $gananciaEnviosTotal,
+            'ventasBrutasHoy'    => $ventasBrutasHoy,
+            'ventasBrutasMes'    => $ventasBrutasMes,
+            'pagosConfirmadosMes' => $pagosConfirmadosMes,
+            'totalCobradoDomiciliosMes' => $totalCobradoDomiciliosMes,
+            'generadoDomiciliariosMes' => $generadoDomiciliariosMes,
+            'gananciaNetaDomiciliosMes' => $totalCobradoDomiciliosMes - $generadoDomiciliariosMes,
+            'domiciliosExternosMes' => $domiciliosExternosMes,
+            'domiciliosPendientes' => Domicilio::where('estado', 'pendiente')->count(),
+            'domiciliosEnCamino' => Domicilio::where('estado', 'en_camino')->count(),
+            'domiciliosEntregadosHoy' => Domicilio::where('estado', 'entregado')->whereDate('fecha_entrega_real', $hoy)->count(),
+            'productosAgotados' => Producto::where('stock', '<=', 0)->count(),
+            'chartLabels' => $chartLabels,
+            'chartVentas' => $chartVentas,
+            'chartDomicilios' => $chartDomicilios,
             'topProductos'      => $topProductos,
             'stockBajo'         => $stockBajo,
             'ventasRecientes'   => $ventasRecientes,
@@ -114,7 +137,20 @@ class DashboardController extends Controller
         $gananciaTotal    = $domiciliario->gananciaTotal();
         $misActivos       = $domiciliario->domiciliosActivos();
         $disponiblesCount = Domicilio::disponibles()->count();
+        $aceptadosCount = $domiciliario->domicilios()->where('estado', 'aceptado')->count();
+        $enCaminoCount = $domiciliario->domicilios()->where('estado', 'en_camino')->count();
+        $externosRealizados = $domiciliario->domicilios()->where('origen', 'externa')->where('estado', 'entregado')->count();
+        $historialEntregas = $domiciliario->domicilios()->where('estado', 'entregado')->with('venta.cliente')->latest('fecha_entrega_real')->limit(8)->get();
         $tarifaVigente    = TarifaDomicilio::vigente();
+        $chartLabels = [];
+        $chartVentas = [];
+        $chartDomicilios = [];
+        for ($date = Carbon::today()->subDays(13); $date <= Carbon::today(); $date->addDay()) {
+            $chartLabels[] = $date->format('d/m');
+            $chartVentas[] = 0;
+            $chartDomicilios[] = (float) $domiciliario->domicilios()
+                ->where('estado', 'entregado')->whereDate('fecha_entrega_real', $date)->sum('tarifa_monto');
+        }
 
         return view('dashboard', [
             'esDomiciliario'   => true,
@@ -128,7 +164,14 @@ class DashboardController extends Controller
             'gananciaTotal'    => $gananciaTotal,
             'misActivos'       => $misActivos,
             'disponiblesCount' => $disponiblesCount,
+            'aceptadosCount' => $aceptadosCount,
+            'enCaminoCount' => $enCaminoCount,
+            'externosRealizados' => $externosRealizados,
+            'historialEntregas' => $historialEntregas,
             'tarifaVigente'    => $tarifaVigente,
+            'chartLabels' => $chartLabels,
+            'chartVentas' => $chartVentas,
+            'chartDomicilios' => $chartDomicilios,
         ]);
     }
 
@@ -182,6 +225,20 @@ class DashboardController extends Controller
         $ultimasComisiones = Comision::where('vendedor_id', $vid)
                                      ->latest()->limit(5)->get();
 
+        $domiciliario = $user->domiciliario;
+        $gananciaDomiciliosMes = $domiciliario?->gananciaMes() ?? 0;
+        $gananciaDomiciliosTotal = $domiciliario?->gananciaTotal() ?? 0;
+        $entregasDomiciliosMes = $domiciliario?->entregasMes() ?? 0;
+        $entregasDomiciliosTotal = $domiciliario?->domicilios()->where('estado', 'entregado')->count() ?? 0;
+        $chartLabels = [];
+        $chartVentas = [];
+        $chartDomicilios = [];
+        for ($date = Carbon::today()->subDays(13); $date <= Carbon::today(); $date->addDay()) {
+            $chartLabels[] = $date->format('d/m');
+            $chartVentas[] = (float) Venta::where('vendedor_id', $vid)->whereDate('created_at', $date)->sum('total');
+            $chartDomicilios[] = (float) ($domiciliario?->domicilios()->where('estado', 'entregado')->whereDate('fecha_entrega_real', $date)->sum('tarifa_monto') ?? 0);
+        }
+
         return view('dashboard', [
             'esAdmin'            => false,
             'sinVendedor'        => false,
@@ -198,6 +255,14 @@ class DashboardController extends Controller
             'ventasRecientes'    => $ventasRecientes,
             'topProductos'       => $topProductos,
             'ultimasComisiones'  => $ultimasComisiones,
+            'tieneDomiciliario'  => (bool) $domiciliario,
+            'gananciaDomiciliosMes' => $gananciaDomiciliosMes,
+            'gananciaDomiciliosTotal' => $gananciaDomiciliosTotal,
+            'entregasDomiciliosMes' => $entregasDomiciliosMes,
+            'entregasDomiciliosTotal' => $entregasDomiciliosTotal,
+            'chartLabels' => $chartLabels,
+            'chartVentas' => $chartVentas,
+            'chartDomicilios' => $chartDomicilios,
         ]);
     }
 }

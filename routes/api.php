@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DescuentoController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -51,31 +52,48 @@ Route::get('/categorias/{id}/productos', function ($id) {
             ->where('activo', true)
             ->orderBy('nombre')
             ->get()
-            ->map(fn($prod) => [
-                'id'          => $prod->id,
-                'nombre'      => $prod->nombre,
-                'descripcion' => $prod->descripcion,
-                'stock'       => $prod->stock,
-                'imagen'      => $prod->imagen ? asset('storage/' . $prod->imagen) : null,
-                'tipo_flor'   => $prod->tipoFlor ? ['nombre' => $prod->tipoFlor->nombre, 'icono' => $prod->tipoFlor->icono] : null,
-                'variantes'   => $prod->variantes
+            ->map(function ($prod) {
+                $descuento = $prod->mejorDescuento();
+
+                $variantes = $prod->variantes
                     ->sortBy('precio')
                     ->values()
-                    ->map(fn($v) => [
-                        'id'                    => $v->id,
-                        'nombre'                => $v->nombre,
-                        'cantidad_por_variante' => $v->cantidad_por_variante,
-                        'precio'                => (float) $v->precio,
-                        'stock'                 => $v->stock,
-                        'agotado'               => $v->stock <= 0,
+                    ->map(function ($v) use ($prod, $descuento) {
+                        return [
+                            'id'                    => $v->id,
+                            'nombre'                => $v->nombre,
+                            'cantidad_por_variante' => $v->cantidad_por_variante,
+                            'precio'                => (float) $v->precio,
+                            'precio_final'          => $descuento
+                                ? $prod->precioConDescuento($v->precio)
+                                : (float) $v->precio,
+                            'stock'                 => $v->stock,
+                            'agotado'               => $v->stock <= 0,
+                        ];
+                    });
+
+                return [
+                    'id'          => $prod->id,
+                    'nombre'      => $prod->nombre,
+                    'descripcion' => $prod->descripcion,
+                    'stock'       => $prod->stock,
+                    'imagen'      => $prod->imagen ? asset('storage/' . $prod->imagen) : null,
+                    'tipo_flor'   => $prod->tipoFlor ? ['nombre' => $prod->tipoFlor->nombre, 'icono' => $prod->tipoFlor->icono] : null,
+                    'descuento'   => $descuento ? [
+                        'valor'      => (float) $descuento->valor,
+                        'tipo'       => $descuento->tipo,
+                        'porcentaje' => $descuento->tipo === 'porcentaje' ? (int) $descuento->valor : null,
+                        'nombre'     => $descuento->nombre,
+                    ] : null,
+                    'variantes'   => $variantes,
+                    'sabores'     => $prod->sabores->pluck('nombre'),
+                    'efectos'     => $prod->efectos->pluck('nombre'),
+                    'colores'     => $prod->colores->map(fn($c) => [
+                        'nombre'     => $c->nombre,
+                        'codigo_hex' => $c->codigo_hex ?? null,
                     ]),
-                'sabores'     => $prod->sabores->pluck('nombre'),
-                'efectos'     => $prod->efectos->pluck('nombre'),
-                'colores'     => $prod->colores->map(fn($c) => [
-                    'nombre'     => $c->nombre,
-                    'codigo_hex' => $c->codigo_hex ?? null,
-                ]),
-            ]);
+                ];
+            });
 
         return response()->json([
             'categoria' => [
@@ -89,15 +107,18 @@ Route::get('/categorias/{id}/productos', function ($id) {
         return response()->json(['error' => 'No se pudieron cargar los productos', 'detalle' => $e->getMessage()], 503);
     }
 });
+// ─── Descuentos ────────────────────────────────────────────
+Route::get('/descuentos/categoria/{categoriaId}', [DescuentoController::class, 'apiPorCategoria']);
+Route::post('/descuentos/productos', [DescuentoController::class, 'apiProductos']);
 
 // ─── Producto individual ───────────────────────────────────
 Route::get('/productos/{id}', function ($id) {
     $prod = Producto::with(['variantes', 'sabores', 'efectos', 'colores', 'categoria', 'tipoFlor'])
         ->findOrFail($id);
 
-    // Reseñas — defensivo: la tabla puede no existir aún
-    $resenasData = ['promedio' => null, 'total' => 0, 'lista' => []];
+    $descuento = $prod->mejorDescuento();
 
+    $resenasData = ['promedio' => null, 'total' => 0, 'lista' => []];
     try {
         $lista = Resena::where('producto_id', $id)
             ->latest()
@@ -120,17 +141,28 @@ Route::get('/productos/{id}', function ($id) {
         'stock'       => $prod->stock,
         'imagen'      => $prod->imagen ? asset('storage/' . $prod->imagen) : null,
         'tipo_flor'   => $prod->tipoFlor ? ['nombre' => $prod->tipoFlor->nombre, 'icono' => $prod->tipoFlor->icono] : null,
+        'descuento'   => $descuento ? [
+            'valor'      => (float) $descuento->valor,
+            'tipo'       => $descuento->tipo,
+            'porcentaje' => $descuento->tipo === 'porcentaje' ? (int) $descuento->valor : null,
+            'nombre'     => $descuento->nombre,
+        ] : null,
         'variantes'   => $prod->variantes
             ->sortBy('precio')
             ->values()
-            ->map(fn($v) => [
-                'id'                    => $v->id,
-                'nombre'                => $v->nombre,
-                'cantidad_por_variante' => $v->cantidad_por_variante,
-                'precio'                => (float) $v->precio,
-                'stock'                 => $v->stock,
-                'agotado'               => $v->stock <= 0,
-            ]),
+            ->map(function ($v) use ($prod, $descuento) {
+                return [
+                    'id'                    => $v->id,
+                    'nombre'                => $v->nombre,
+                    'cantidad_por_variante' => $v->cantidad_por_variante,
+                    'precio'                => (float) $v->precio,
+                    'precio_final'          => $descuento
+                        ? $prod->precioConDescuento($v->precio)
+                        : (float) $v->precio,
+                    'stock'                 => $v->stock,
+                    'agotado'               => $v->stock <= 0,
+                ];
+            }),
         'sabores'     => $prod->sabores->pluck('nombre'),
         'efectos'     => $prod->efectos->pluck('nombre'),
         'colores'     => $prod->colores->map(fn($c) => [
@@ -220,8 +252,8 @@ Route::get('/ref/{codigo}', function ($codigo) {
     ]);
 });
 
-// Calcula el precio real que se cobrará (recargo de vendedor + tarifa de
-// domicilio vigente en BD) SIN crear el pedido, tocar stock ni el cliente.
+// Calcula el precio real que se cobrará (recargo de vendedor + tarifa fija de
+// domicilio según horario) SIN crear el pedido, tocar stock ni el cliente.
 // El frontend debe llamar esto antes de dejar confirmar el pago, para no
 // mostrar nunca un total que luego no coincida con el que arma /checkout.
 Route::post('/checkout/cotizar', function (Request $request) {
@@ -236,9 +268,6 @@ Route::post('/checkout/cotizar', function (Request $request) {
         'codigo_vendedor'      => 'nullable|string|max:16',
     ]);
 
-    // Misma prioridad de atribución que /checkout, pero de solo lectura:
-    // vendedor ya asignado al cliente (si ya existe) tiene prioridad sobre
-    // el vendedor del código actual en el link.
     $vendedorCodigo = $request->filled('codigo_vendedor')
         ? Vendedor::activos()->porCodigo($request->codigo_vendedor)->first()
         : null;
@@ -255,23 +284,25 @@ Route::post('/checkout/cotizar', function (Request $request) {
         ? $vendedor->comision_porcentaje / 100
         : 0;
 
-    // Precios SIEMPRE desde la variante real en BD, igual que en /checkout.
     $subtotalFinal = 0;
     $itemsCotizados = [];
     foreach ($request->items as $item) {
-        $variante = Variante::find($item['variante_id']);
+        $variante = Variante::with('producto')->find($item['variante_id']);
         if (!$variante) {
             abort(422, 'Uno de los productos de tu carrito ya no está disponible.');
         }
-        $precioBase  = (float) $variante->precio;
+
+        $precioBase = (float) $variante->precio;
+
+        // Descuento (por producto o categoría) se aplica ANTES del recargo de vendedor
+        $precioConDescuento = $variante->producto
+            ? $variante->producto->precioConDescuento($precioBase)
+            : $precioBase;
+
         $cant        = (int) $item['cantidad'];
-        $precioFinal = round($precioBase * (1 + $markup));
+        $precioFinal = round($precioConDescuento * (1 + $markup));
         $subtotalFinal += $precioFinal * $cant;
 
-        // Precio real por producto: el frontend lo necesita para que la
-        // lista de items no muestre un precio distinto al que se ve en el
-        // subtotal (p.ej. cuando el recargo viene de un vendedor asignado
-        // por teléfono en BD, que el frontend no puede calcular por su cuenta).
         $itemsCotizados[] = [
             'variante_id'     => $variante->id,
             'precio_unitario' => $precioFinal,
@@ -282,15 +313,12 @@ Route::post('/checkout/cotizar', function (Request $request) {
     $esEnvio    = $request->boolean('envio');
     $tarifa     = $esEnvio ? TarifaDomicilio::vigente() : null;
     $envioBase  = $tarifa ? (float) $tarifa->monto : 0;
-    $envioFinal = round($envioBase * (1 + $markup));
+    $envioFinal = $envioBase;
 
     return response()->json([
         'items'           => $itemsCotizados,
         'subtotal'        => round($subtotalFinal, 0),
         'costo_domicilio' => $esEnvio ? $envioFinal : 0,
-        // Ajusta 'nombre' al campo real de tu modelo TarifaDomicilio si se
-        // llama distinto (p.ej. 'tipo' o 'etiqueta'). Si no existe, queda null
-        // y el frontend simplemente no muestra el badge.
         'tarifa_nombre'   => $tarifa->nombre ?? $tarifa->tipo ?? null,
         'recargos'        => [],
         'total'           => round($subtotalFinal + ($esEnvio ? $envioFinal : 0), 0),
@@ -315,17 +343,12 @@ Route::post('/checkout', function (Request $request) {
         'metodo_pago'             => 'required|in:efectivo,transferencia,cripto,tarjeta,otro',
         'notas'                   => 'nullable|string|max:500',
         'codigo_vendedor'         => 'nullable|string|max:16',
-        // Total que el cliente vio y aceptó explícitamente en /checkout/cotizar.
-        // Si el total real cambia entre la cotización y este submit (p.ej. cruzó
-        // el horario nocturno), rechazamos en vez de cobrar un precio distinto
-        // al que el cliente confirmó.
         'total_aceptado'          => 'nullable|numeric',
     ]);
 
     return DB::transaction(function () use ($request) {
         $clienteData = $request->input('cliente');
 
-        // Vendedor según el código del link (si viene en esta compra)
         $vendedorCodigo = $request->filled('codigo_vendedor')
             ? Vendedor::activos()->porCodigo($request->codigo_vendedor)->first()
             : null;
@@ -341,32 +364,33 @@ Route::post('/checkout', function (Request $request) {
             ]
         );
 
-        // Si el cliente ya existía sin referente y ahora llega con código, lo guardamos
         if ($vendedorCodigo && !$cliente->vendedor_id) {
             $cliente->update(['vendedor_id' => $vendedorCodigo->id]);
         }
 
-        // Atribución: prioridad al vendedor referente del cliente; si no, el del código
         $vendedor = $cliente->vendedor_id
             ? Vendedor::find($cliente->vendedor_id)
             : $vendedorCodigo;
 
-        // Recargo del referido: % del vendedor que se suma al precio (lo paga el cliente)
         $markup = ($vendedor && $vendedor->comision_porcentaje > 0)
             ? $vendedor->comision_porcentaje / 100
             : 0;
 
-        // Recalcular precios SERVER-SIDE desde el precio real de la variante (no confiar en el front)
-        $baseSubtotal  = 0;   // suma real sin recargo (base para la comisión)
-        $subtotalFinal = 0;   // lo que paga el cliente (con recargo)
+        $baseSubtotal  = 0;
+        $subtotalFinal = 0;
         $lineas = [];
-        $necesidad = [];      // unidades base requeridas por producto
+        $necesidad = [];
         foreach ($request->items as $item) {
-            // Precio SIEMPRE desde la variante real (variante_id es obligatorio): no se confía en el front
-            $variante    = Variante::find($item['variante_id']);
-            $precioBase  = (float) ($variante->precio ?? 0);
+            $variante   = Variante::with('producto')->find($item['variante_id']);
+            $precioBase = (float) ($variante->precio ?? 0);
+
+            // Descuento aplicado ANTES del recargo, igual que en /checkout/cotizar
+            $precioConDescuento = ($variante && $variante->producto)
+                ? $variante->producto->precioConDescuento($precioBase)
+                : $precioBase;
+
             $cant        = (int) $item['cantidad'];
-            $precioFinal = round($precioBase * (1 + $markup));
+            $precioFinal = round($precioConDescuento * (1 + $markup));
 
             $baseSubtotal  += $precioBase  * $cant;
             $subtotalFinal += $precioFinal * $cant;
@@ -379,7 +403,6 @@ Route::post('/checkout', function (Request $request) {
             $lineas[] = $item + ['precio_final' => $precioFinal, 'cant' => $cant];
         }
 
-        // Validar stock suficiente (en unidades base) antes de reservar
         $productos = Producto::whereIn('id', array_keys($necesidad))->get()->keyBy('id');
         foreach ($necesidad as $pid => $need) {
             $p = $productos[$pid] ?? null;
@@ -391,12 +414,8 @@ Route::post('/checkout', function (Request $request) {
         $esEnvio    = $request->boolean('envio');
         $tarifa     = $esEnvio ? TarifaDomicilio::vigente() : null;
         $envioBase  = $tarifa ? (float) $tarifa->monto : 0;
-        $envioFinal = round($envioBase * (1 + $markup));   // el envío también lleva recargo
+        $envioFinal = $envioBase;
 
-        // Si el cliente aceptó un total en /checkout/cotizar, verificamos que
-        // el precio real (calculado ahora mismo) siga siendo el mismo. Si
-        // cambió, no creamos el pedido: se lo devolvemos para que confirme
-        // el nuevo total en vez de cobrarle algo distinto a lo que vio.
         $totalCalculado = round($subtotalFinal + $envioFinal, 0);
         if ($request->filled('total_aceptado') && abs($totalCalculado - (float) $request->total_aceptado) > 1) {
             abort(409, 'El total cambió desde que lo confirmaste. Revisa el nuevo total antes de continuar.');
@@ -428,7 +447,6 @@ Route::post('/checkout', function (Request $request) {
             ]);
         }
 
-        // Reservar stock: descontar unidades base y recalcular disponibilidad de paquetes
         foreach ($necesidad as $pid => $need) {
             $p = $productos[$pid];
             $p->decrement('stock', $need);
@@ -459,11 +477,9 @@ Route::post('/checkout', function (Request $request) {
             'notas'       => $request->notas,
         ]);
 
-        // Comisión del vendedor = SOLO el recargo de los productos.
-        // El recargo del envío se lo queda la tienda (cubre logística/domicilios).
         if ($vendedor && $markup > 0) {
             $baseProductos    = round($baseSubtotal);
-            $recargoProductos = round($subtotalFinal - $baseSubtotal); // markup solo de productos
+            $recargoProductos = round($subtotalFinal - $baseSubtotal);
             Comision::create([
                 'vendedor_id'    => $vendedor->id,
                 'venta_id'       => $venta->id,
@@ -474,21 +490,21 @@ Route::post('/checkout', function (Request $request) {
             ]);
         }
 
-        // Notificar a los administradores: nueva venta del frontend
         $admins = User::where('role', 'admin')->get();
         if ($admins->isNotEmpty()) {
             Notification::send($admins, new NuevaVentaNotification($pedido));
         }
 
         return response()->json([
-            'pedido_id'         => $pedido->id,            // número amigable para mostrar (#id)
-            'seguimiento_token' => $pedido->public_token,  // token para la URL de seguimiento
+            'pedido_id'         => $pedido->id,
+            'seguimiento_token' => $pedido->public_token,
             'total'             => $venta->total,
             'costo_envio'       => $envioFinal,
             'cliente'           => $cliente->nombre,
         ], 201);
     });
 });
+
 
 // ─── Auth de clientes ──────────────────────────────────────
 

@@ -25,6 +25,15 @@ class Categoria extends Model
     {
         return $this->hasMany(\App\Models\Producto::class);
     }
+
+    /**
+     * Relación muchos a muchos: Categoría <-> Descuentos
+     */
+    public function descuentos()
+    {
+        return $this->belongsToMany(Descuento::class, 'descuentos_categorias');
+    }
+
     public static function boot()
     {
         parent::boot();

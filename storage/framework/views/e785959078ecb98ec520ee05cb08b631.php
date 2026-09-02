@@ -46,7 +46,7 @@
                             
                             <div class="col">
                                 <div class="d-flex align-items-center gap-2 mb-1">
-                                    <strong class="fs-6"><?php echo e($d->venta->cliente->nombre ?? '—'); ?></strong>
+                                    <strong class="fs-6"><?php echo e($d->nombre_cliente); ?></strong>
                                     <?php if($d->tipo === 'express'): ?>
                                         <span class="badge bg-warning text-dark">⚡ Express</span>
                                     <?php endif; ?>

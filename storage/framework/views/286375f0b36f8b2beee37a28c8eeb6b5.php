@@ -13,6 +13,53 @@
         <?php endif; ?>
     </div>
 
+    <?php if(auth()->user()->isAdmin() || auth()->user()->domiciliario?->id === $d->id): ?>
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white fw-semibold">📝 Registrar entrega manual</div>
+        <div class="card-body">
+            <?php if($errors->any()): ?>
+                <div class="alert alert-danger"><?php echo e($errors->first()); ?></div>
+            <?php endif; ?>
+            <form action="<?php echo e(route('domiciliarios.entrega-manual', $d)); ?>" method="POST" class="row g-3">
+                <?php echo csrf_field(); ?>
+                <div class="col-md-4">
+                    <label class="form-label">Venta</label>
+                    <select name="venta_id" class="form-select">
+                        <option value="">Externa / sin venta</option>
+                        <?php $__currentLoopData = $ventasDisponibles; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $venta): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($venta->id); ?>">#<?php echo e($venta->id); ?> · <?php echo e($venta->cliente->nombre ?? 'Sin cliente'); ?> · $<?php echo e(number_format($venta->total, 0, ',', '.')); ?></option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Cliente externo</label>
+                    <input type="text" name="cliente_nombre" class="form-control" placeholder="Nombre del cliente">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Teléfono externo</label>
+                    <input type="text" name="cliente_telefono" class="form-control" placeholder="Teléfono del cliente">
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label">Dirección</label>
+                    <input type="text" name="direccion" class="form-control" required placeholder="Dirección de entrega">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Ciudad / barrio</label>
+                    <input type="text" name="ciudad" class="form-control">
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Comentarios</label>
+                    <input type="text" name="comentarios" class="form-control" placeholder="Nota opcional">
+                </div>
+                <div class="col-12 d-flex justify-content-between align-items-center">
+                    <small class="text-muted">Puedes seleccionar una venta o registrar una entrega externa. Se asignará la tarifa fija vigente.</small>
+                    <button class="btn btn-success">✅ Registrar entrega</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <?php endif; ?>
+
     
     <div class="row g-3 mb-4">
         <div class="col-sm-4">

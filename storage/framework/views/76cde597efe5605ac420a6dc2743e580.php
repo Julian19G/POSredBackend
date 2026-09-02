@@ -1,18 +1,18 @@
 <?php $__env->startSection('content'); ?>
 <style>
     :root {
-        --panel-bg: #14161c;
-        --panel-bg-alt: #1b1e26;
-        --panel-border: #262a35;
-        --text-primary: #e8eaf0;
-        --text-muted: #8b92a3;
-        --accent: #7c6cf0;
-        --accent-soft: rgba(124,108,240,.15);
+        --panel-bg: #fffdf9;
+        --panel-bg-alt: #f4efe5;
+        --panel-border: var(--pg-line);
+        --text-primary: var(--pg-ink);
+        --text-muted: var(--pg-muted);
+        --accent: var(--pg-gold);
+        --accent-soft: rgba(205,168,106,.18);
     }
 
-    body { background:#0b0c10; }
+    body { background:#faf8f3; }
 
-    h1 { font-weight:700; letter-spacing:-.02em; color: var(--text-primary); }
+    h1 { font-weight:700; letter-spacing:-.02em; color: var(--pg-ink); }
 
     /* Alertas */
     .alert-success {
@@ -33,7 +33,7 @@
     .filtros-card {
         border:1px solid var(--panel-border) !important;
         border-radius:16px !important;
-        background: var(--panel-bg) !important;
+        background: #fffdf9 !important;
         box-shadow:0 10px 30px -15px rgba(0,0,0,.5) !important;
     }
     .filtros-card .form-label {
@@ -86,21 +86,21 @@
     }
 
     /* Tabla */
-    .table-responsive {
+    .legacy-products-table-wrap {
         border:1px solid var(--panel-border);
         border-radius:16px;
         overflow:hidden;
         box-shadow:0 20px 50px -25px rgba(0,0,0,.6);
     }
-    table {
+    .legacy-products-table {
         color: var(--text-primary) !important;
-        background: var(--panel-bg) !important;
+        background: #fffdf9 !important;
         margin-bottom:0 !important;
     }
-    table thead {
-        background: var(--panel-bg-alt) !important;
+    .legacy-products-table thead {
+        background: #f4efe5 !important;
     }
-    table thead th {
+    .legacy-products-table thead th {
         color: var(--text-muted) !important;
         font-size:.72rem;
         text-transform:uppercase;
@@ -109,19 +109,19 @@
         border-color: var(--panel-border) !important;
         padding:.9rem .75rem;
     }
-    table tbody td {
+    .legacy-products-table tbody td {
         border-color: var(--panel-border) !important;
-        background: transparent !important;
+        background: #fffdf9 !important;
         vertical-align: middle;
         padding:.75rem;
     }
-    table tbody tr {
+    .legacy-products-table tbody tr {
         transition: background .12s ease;
     }
-    table.table-hover tbody tr:hover td {
-        background: var(--panel-bg-alt) !important;
+    .legacy-products-table.table-hover tbody tr:hover td {
+        background: #f7f3ea !important;
     }
-    table small.text-muted { color:#5f6675 !important; }
+    .legacy-products-table small.text-muted { color: var(--pg-muted) !important; }
 
     /* Badges */
     .badge.bg-dark { background: var(--panel-bg-alt) !important; border:1px solid var(--panel-border); font-weight:500; }
@@ -163,90 +163,84 @@
     }
 </style>
 
-<div class="container py-4">
+<div class="catalog-page">
+<div class="catalog-shell">
 
     <?php if(session('success')): ?>
-        <div class="alert alert-success alert-dismissible fade show mt-3">
+        <div class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-emerald-300">
             <?php echo e(session('success')); ?>
 
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     <?php endif; ?>
 
     <?php if(session('error')): ?>
-        <div class="alert alert-warning alert-dismissible fade show mt-3">
+        <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-amber-300">
             <?php echo e(session('error')); ?>
 
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     <?php endif; ?>
 
-    <div class="d-flex justify-content-between align-items-center mb-3 mt-3">
+    <div class="catalog-header">
         <div>
-            <h1 class="h3 mb-0">📦 Productos</h1>
-            <small class="text-muted">Gestiona el catálogo, stock y presentaciones.</small>
+            <h1 class="catalog-title">📦 Productos</h1>
+            <small class="catalog-subtitle">Gestiona el catálogo, stock y presentaciones.</small>
         </div>
         <?php if($esAdmin): ?>
-            <a href="<?php echo e(route('productos.create')); ?>" class="btn btn-primary">➕ Nuevo producto</a>
+            <a href="<?php echo e(route('productos.create')); ?>" class="catalog-button catalog-cta">➕ Nuevo producto</a>
         <?php endif; ?>
     </div>
 
-    
-    <form method="GET" action="<?php echo e(route('productos.index')); ?>" class="card filtros-card mb-4">
-        <div class="card-body py-3">
-            <div class="row g-2 align-items-end">
-                <div class="col-md-4">
-                    <label class="form-label small mb-1">Buscar</label>
-                    <input type="text" name="buscar" class="form-control form-control-sm"
-                           placeholder="Nombre del producto…" value="<?php echo e(request('buscar')); ?>">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label small mb-1">Categoría</label>
-                    <select name="categoria_id" class="form-select form-select-sm">
-                        <option value="">Todas</option>
-                        <?php $__currentLoopData = $categorias; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $cat): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                            <option value="<?php echo e($cat->id); ?>" <?php echo e(request('categoria_id') == $cat->id ? 'selected' : ''); ?>>
-                                <?php echo e($cat->nombre); ?>
-
-                            </option>
-                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                    </select>
-                </div>
-                <?php if($esAdmin): ?>
-                <div class="col-md-2">
-                    <label class="form-label small mb-1">Estado</label>
-                    <select name="activo" class="form-select form-select-sm">
-                        <option value="">Todos</option>
-                        <option value="1" <?php echo e(request('activo') === '1' ? 'selected' : ''); ?>>Activos</option>
-                        <option value="0" <?php echo e(request('activo') === '0' ? 'selected' : ''); ?>>Inactivos</option>
-                    </select>
-                </div>
-                <div class="col-md-3 d-flex gap-2 align-items-end">
-                    <div class="form-check mb-0 me-2">
-                        <input class="form-check-input" type="checkbox" name="stock_bajo" id="stock_bajo"
-                               <?php echo e(request()->has('stock_bajo') ? 'checked' : ''); ?>>
-                        <label class="form-check-label small" for="stock_bajo">Stock bajo (≤10)</label>
-                    </div>
-                    <button type="submit" class="btn btn-sm btn-primary">Filtrar</button>
-                    <a href="<?php echo e(route('productos.index')); ?>" class="btn btn-sm btn-outline-secondary">✕</a>
-                </div>
-                <?php else: ?>
-                <div class="col-md-5 d-flex gap-2 align-items-end">
-                    <button type="submit" class="btn btn-sm btn-primary">Filtrar</button>
-                    <a href="<?php echo e(route('productos.index')); ?>" class="btn btn-sm btn-outline-secondary">✕</a>
-                </div>
-                <?php endif; ?>
+    <form method="GET" action="<?php echo e(route('productos.index')); ?>" class="catalog-layout">
+        <aside class="catalog-filter" aria-label="Filtros de productos">
+            <div class="catalog-filter-heading">
+                <span>Filtros</span>
+                <span class="catalog-filter-count"><?php echo e($productos->total()); ?></span>
             </div>
-        </div>
-    </form>
+            <div class="catalog-filter-section">
+                <label class="catalog-label" for="categoria_id">Categoría</label>
+                <select name="categoria_id" id="categoria_id" class="catalog-input">
+                    <option value="">Todas las categorías</option>
+                    <?php $__currentLoopData = $categorias; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $cat): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <option value="<?php echo e($cat->id); ?>" <?php echo e(request('categoria_id') == $cat->id ? 'selected' : ''); ?>><?php echo e($cat->nombre); ?></option>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                </select>
+            </div>
+            <?php if($esAdmin): ?>
+            <div class="catalog-filter-section">
+                <label class="catalog-label" for="activo">Estado</label>
+                <select name="activo" id="activo" class="catalog-input">
+                    <option value="">Todos</option>
+                    <option value="1" <?php echo e(request('activo') === '1' ? 'selected' : ''); ?>>Activos</option>
+                    <option value="0" <?php echo e(request('activo') === '0' ? 'selected' : ''); ?>>Inactivos</option>
+                </select>
+            </div>
+            <div class="catalog-filter-section">
+                <label class="catalog-check-label">
+                    <input class="catalog-check" type="checkbox" name="stock_bajo" id="stock_bajo" <?php echo e(request()->has('stock_bajo') ? 'checked' : ''); ?>>
+                    <span>Stock bajo <small>10 unidades o menos</small></span>
+                </label>
+            </div>
+            <?php endif; ?>
+            <div class="catalog-filter-actions">
+                <button type="submit" class="catalog-button">Aplicar filtros</button>
+                <a href="<?php echo e(route('productos.index')); ?>" class="catalog-button-muted">Limpiar</a>
+            </div>
+        </aside>
 
-    <div class="table-responsive">
-        <table class="table table-hover align-middle text-center mb-0">
+        <section class="catalog-content">
+            <div class="catalog-search">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                <input type="text" name="buscar" class="catalog-input" placeholder="Buscar producto..." value="<?php echo e(request('buscar')); ?>" aria-label="Buscar producto">
+                <button type="submit" class="catalog-search-button">Buscar</button>
+            </div>
+
+            <div class="catalog-table-wrap">
+        <table class="catalog-table vendedor-table product-catalog-table">
             <thead>
                 <tr>
                     <th>ID</th>
                     <th>Imagen</th>
-                    <th class="text-start">Nombre</th>
+                    <th class="catalog-cell-name">Nombre</th>
                     <th>Categoría</th>
                     <th>Variantes / Precios</th>
                     <th>Stock base</th>
@@ -257,78 +251,88 @@
             <tbody>
                 <?php $__empty_1 = true; $__currentLoopData = $productos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $producto): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                 <tr>
-                    <td><?php echo e($producto->id); ?></td>
-                    <td>
+                    <td data-label="ID"><?php echo e($producto->id); ?></td>
+                    <td class="catalog-image-cell" data-label="Imagen">
                         <?php if($producto->imagen): ?>
                             <img src="<?php echo e(asset('storage/' . $producto->imagen)); ?>"
                                  alt="<?php echo e($producto->nombre); ?>"
-                                 style="width:50px;height:50px;object-fit:cover;border-radius:8px;border:1px solid var(--panel-border)">
+                                 class="catalog-image">
                         <?php else: ?>
-                            <span class="text-muted small">—</span>
+                            <span class="catalog-muted">—</span>
                         <?php endif; ?>
                     </td>
-                    <td class="text-start">
+                    <td class="catalog-cell-name" data-label="Nombre">
                         <strong><?php echo e($producto->nombre); ?></strong>
                         <?php if($producto->descripcion): ?>
-                            <br><small class="text-muted"><?php echo e(Str::limit($producto->descripcion, 40)); ?></small>
+                            <br><small class="catalog-muted"><?php echo e(Str::limit($producto->descripcion, 40)); ?></small>
                         <?php endif; ?>
                     </td>
-                    <td><?php echo e($producto->categoria->nombre ?? '—'); ?></td>
-                    <td class="text-start" style="max-width:180px">
+                    <td data-label="Categoría"><?php echo e($producto->categoria->nombre ?? '—'); ?></td>
+                    <td class="catalog-variants" data-label="Variantes / precios">
                         <?php $__empty_2 = true; $__currentLoopData = $producto->variantes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $v): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_2 = false; ?>
-                            <span class="badge bg-dark mb-1"><?php echo e($v->nombre); ?> — $<?php echo e(number_format($v->precio, 0, ',', '.')); ?>
+                            <span class="catalog-badge mb-1"><?php echo e($v->nombre); ?> — $<?php echo e(number_format($v->precio, 0, ',', '.')); ?>
 
-                                <?php if($v->stock <= 5): ?> <span class="text-warning">⚠<?php echo e($v->stock); ?></span>
+                                <?php if($v->stock <= 5): ?> <span class="catalog-stock-warning">⚠<?php echo e($v->stock); ?></span>
                                 <?php else: ?>
                                 <?php endif; ?>
                             </span><br>
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_2): ?>
-                            <span class="text-muted small">Sin variantes</span>
+                            <span class="catalog-muted">Sin variantes</span>
                         <?php endif; ?>
                     </td>
-                    <td>
+                    <td data-label="Stock base">
                         <?php if($producto->stock <= 10): ?>
-                            <span class="badge bg-warning">⚠ <?php echo e($producto->stock); ?></span>
+                            <span class="catalog-low-stock">⚠ <?php echo e($producto->stock); ?></span>
                         <?php else: ?>
                             <?php echo e($producto->stock); ?>
 
                         <?php endif; ?>
                     </td>
-                    <td>
-                        <span class="badge <?php echo e($producto->activo ? 'bg-success' : 'bg-secondary'); ?>">
+                    <td data-label="Estado">
+                        <span class="catalog-status <?php echo e($producto->activo ? 'catalog-status-active' : 'catalog-status-inactive'); ?>">
                             <?php echo e($producto->activo ? 'Activo' : 'Inactivo'); ?>
 
                         </span>
                     </td>
-                    <td>
-                        <a href="<?php echo e(route('productos.show', $producto)); ?>" class="btn btn-info btn-sm">Ver</a>
+                    <td class="catalog-actions-cell"><div class="catalog-actions">
+                        <a href="<?php echo e(route('productos.show', $producto)); ?>" class="catalog-action catalog-action-info" title="Ver producto" aria-label="Ver producto">
+                            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.8"/></svg>
+                        </a>
                         <?php if($esAdmin): ?>
-                            <a href="<?php echo e(route('inventarios.create', $producto)); ?>" class="btn btn-sm btn-outline-success" title="Agregar stock">+Stock</a>
-                            <a href="<?php echo e(route('productos.edit', $producto)); ?>" class="btn btn-warning btn-sm">Editar</a>
-                            <form action="<?php echo e(route('productos.destroy', $producto)); ?>" method="POST" class="d-inline">
+                            <a href="<?php echo e(route('inventarios.create', $producto)); ?>" class="catalog-action catalog-action-stock" title="Agregar stock" aria-label="Agregar stock">
+                                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                            </a>
+                            <a href="<?php echo e(route('productos.edit', $producto)); ?>" class="catalog-action catalog-action-edit" title="Editar producto" aria-label="Editar producto">
+                                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="m4 16.5-.8 3.3 3.3-.8L18.8 6.7a2.1 2.1 0 0 0-3-3L4 16.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+                            </a>
+                            <form action="<?php echo e(route('productos.destroy', $producto)); ?>" method="POST">
                                 <?php echo csrf_field(); ?> <?php echo method_field('DELETE'); ?>
-                                <button type="submit" class="btn btn-danger btn-sm"
-                                        data-confirm="Se eliminará este producto permanentemente.">Eliminar</button>
-                            </form>
+                                <button type="submit" class="catalog-action catalog-action-delete" title="Eliminar producto" aria-label="Eliminar producto"
+                                        data-confirm="Se eliminará este producto permanentemente.">
+                                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M5 7h14M10 11v6M14 11v6M8 7l.7-2h6.6l.7 2m-9 0 .7 13h8.6l.7-13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </button>
+                            </form></div>
                         <?php endif; ?>
                     </td>
                 </tr>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                 <tr>
-                    <td colspan="8" class="text-center text-muted py-4">No hay productos.</td>
+                    <td colspan="8" class="catalog-empty">No hay productos.</td>
                 </tr>
                 <?php endif; ?>
             </tbody>
-        </table>
-    </div>
+                </table>
+            </div>
 
-    <?php if($productos->hasPages()): ?>
-        <div class="d-flex justify-content-between align-items-center mt-3">
-            <?php echo e($productos->links()); ?>
+            <?php if($productos->hasPages()): ?>
+                <div class="catalog-footer">
+                    <?php echo e($productos->links()); ?>
 
-            <small class="text-muted"><?php echo e($productos->total()); ?> producto(s)</small>
-        </div>
-    <?php endif; ?>
-</div>
+                    <small><?php echo e($productos->total()); ?> producto(s)</small>
+                </div>
+            <?php endif; ?>
+        </section>
+    </form>
+</div></div>
 <?php $__env->stopSection(); ?>
 <?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\Usuario\Documents\My Web Sites\POS\Backend\POSRed\resources\views/productos/index.blade.php ENDPATH**/ ?>

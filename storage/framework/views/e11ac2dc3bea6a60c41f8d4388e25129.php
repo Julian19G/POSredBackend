@@ -20,6 +20,31 @@
         </div>
     </div>
 
+    <?php if(!$vendedor->user_id): ?>
+        <div class="alert alert-warning">
+            Este vendedor no tiene una cuenta de usuario vinculada. Vincúlala desde <strong>Usuarios</strong> para que pueda iniciar sesión, tomar domicilios y ver sus ganancias.
+        </div>
+    <?php elseif($vendedor->domiciliario): ?>
+        <div class="alert alert-success">Este vendedor también está habilitado como domiciliario (<?php echo e($vendedor->domiciliario->vehiculoLabel()); ?>).</div>
+    <?php endif; ?>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-dark text-white">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                <div>
+                    <div class="small text-white-50 text-uppercase fw-semibold">Ganancia total acumulada</div>
+                    <div class="display-6 fw-bold text-warning">$<?php echo e(number_format($stats['total_ganado'], 0, ',', '.')); ?></div>
+                    <div class="small text-white-50">Comisiones de ventas + domicilios entregados</div>
+                </div>
+                <div class="text-md-end small">
+                    <div>Ventas: <strong>$<?php echo e(number_format($stats['total_comisionado'], 0, ',', '.')); ?></strong></div>
+                    <div>Domicilios: <strong>$<?php echo e(number_format($stats['ganancia_domicilios'], 0, ',', '.')); ?></strong></div>
+                    <div class="mt-2 text-warning">Pendiente de pago: <strong>$<?php echo e(number_format($stats['saldo_pendiente'], 0, ',', '.')); ?></strong></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     
     <div class="row g-3 mb-4">
         <div class="col-6 col-md-3">
@@ -28,6 +53,15 @@
                 <div class="small text-muted">Total comisionado</div>
             </div>
         </div>
+        <?php if($vendedor->domiciliario): ?>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 text-center py-3">
+                <div class="fs-4 fw-bold text-success">$<?php echo e(number_format($stats['ganancia_domicilios'], 0, ',', '.')); ?></div>
+                <div class="small text-muted">Ganancias domicilios</div>
+                <div class="small text-muted"><?php echo e($stats['domicilios_entregados']); ?> entregados</div>
+            </div>
+        </div>
+        <?php endif; ?>
         <div class="col-6 col-md-3">
             <div class="card border-0 shadow-sm rounded-4 text-center py-3">
                 <div class="fs-4 fw-bold text-success">$<?php echo e(number_format($stats['total_pagado'], 0, ',', '.')); ?></div>
@@ -310,6 +344,28 @@
                 <div class="card-footer bg-white"><?php echo e($ventas->links()); ?></div>
                 <?php endif; ?>
             </div>
+
+            <?php if($vendedor->domiciliario): ?>
+            <div class="card border-0 shadow-sm rounded-4 mt-4">
+                <div class="card-header bg-white border-0 pt-3 pb-0">
+                    <h6 class="mb-0 fw-bold">🛵 Domicilios realizados</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm mb-0 align-middle">
+                            <thead class="table-light"><tr><th class="ps-3">#</th><th>Cliente</th><th>Estado</th><th class="text-end pe-3">Ganancia</th></tr></thead>
+                            <tbody>
+                            <?php $__empty_1 = true; $__currentLoopData = $domicilios; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $domicilio): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                                <tr><td class="ps-3">#<?php echo e($domicilio->id); ?></td><td><?php echo e($domicilio->venta->cliente->nombre ?? '—'); ?></td><td><?php echo e(ucfirst($domicilio->estado)); ?></td><td class="text-end pe-3">$<?php echo e(number_format($domicilio->estado === 'entregado' ? $domicilio->tarifa_monto : 0, 0, ',', '.')); ?></td></tr>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                                <tr><td colspan="4" class="text-center text-muted py-3">Sin domicilios asignados.</td></tr>
+                            <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
 
         </div>
     </div>

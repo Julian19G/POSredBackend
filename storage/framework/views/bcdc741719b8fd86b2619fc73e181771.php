@@ -26,7 +26,7 @@
         <tbody>
             <?php $__empty_1 = true; $__currentLoopData = $domicilios; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $domicilio): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                 <?php
-                    $cliente = $domicilio->venta->cliente ?? null;
+                    $cliente = $domicilio->venta?->cliente;
                     $estado  = $domicilio->estado ?? 'pendiente';
                     $badgeColor = match($estado) {
                         'pendiente'  => 'secondary',
@@ -39,12 +39,13 @@
                 <tr>
                     <td><?php echo e($domicilio->id); ?></td>
                     <td>
-                        <a href="<?php echo e(route('ventas.show', $domicilio->venta_id)); ?>">
-                            #<?php echo e($domicilio->venta_id); ?>
-
-                        </a>
+                        <?php if($domicilio->venta_id): ?>
+                            <a href="<?php echo e(route('ventas.show', $domicilio->venta_id)); ?>">#<?php echo e($domicilio->venta_id); ?></a>
+                        <?php else: ?>
+                            <span class="badge bg-secondary">Externa</span>
+                        <?php endif; ?>
                     </td>
-                    <td><?php echo e($cliente->nombre ?? '—'); ?></td>
+                    <td><?php echo e($domicilio->nombre_cliente); ?></td>
                     <td><?php echo e($domicilio->direccion); ?></td>
                     <td>
                         <span class="badge bg-<?php echo e($badgeColor); ?>">

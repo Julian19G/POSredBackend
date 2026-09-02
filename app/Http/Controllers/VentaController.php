@@ -136,7 +136,8 @@ class VentaController extends Controller
             }
 
             $esEnvio    = (int) $request->envio === 1;
-            $costoEnvio = $esEnvio ? (float) ($request->costo_envio ?? 0) : 0;
+            $tarifa     = $esEnvio ? TarifaDomicilio::vigente() : null;
+            $costoEnvio = $tarifa ? (float) $tarifa->monto : 0;
 
             $venta = Venta::create([
                 'cliente_id'       => $request->cliente_id,
@@ -154,8 +155,6 @@ class VentaController extends Controller
             $this->registrarDetalles($venta, $request);
 
             if ($esEnvio) {
-                $tarifa = TarifaDomicilio::vigente();
-
                 $partes = array_filter([
                     $request->direccion,
                     $request->ciudad,

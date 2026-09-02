@@ -14,7 +14,7 @@ class RutaController extends Controller
     private function miDomiciliario(): ?Domiciliario
     {
         $user = auth()->user();
-        if ($user->isDomiciliario()) {
+        if ($user->tienePerfilDomiciliario()) {
             return $user->domiciliario;
         }
         return null;
@@ -24,7 +24,7 @@ class RutaController extends Controller
     public function disponibles()
     {
         abort_unless(
-            auth()->user()->isDomiciliario() || auth()->user()->isAdmin(),
+            auth()->user()->tienePerfilDomiciliario() || auth()->user()->isAdmin(),
             403
         );
 
@@ -42,7 +42,7 @@ class RutaController extends Controller
     public function index()
     {
         $user = auth()->user();
-        abort_unless($user->isDomiciliario() || $user->isAdmin(), 403);
+        abort_unless($user->tienePerfilDomiciliario() || $user->isAdmin(), 403);
 
         if ($user->isAdmin()) {
             $rutas = Ruta::with(['domiciliario', 'domicilios.venta.cliente'])

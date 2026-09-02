@@ -55,6 +55,22 @@ class Descuento extends Model
     }
 
     /**
+     * Relación M:N con Productos
+     */
+    public function productos()
+    {
+        return $this->belongsToMany(Producto::class, 'descuentos_productos');
+    }
+
+    /**
+     * Relación M:N con Categorías
+     */
+    public function categorias()
+    {
+        return $this->belongsToMany(Categoria::class, 'descuentos_categorias');
+    }
+
+    /**
      * Scope: descuentos activos y vigentes
      */
     public function scopeActivos($query)

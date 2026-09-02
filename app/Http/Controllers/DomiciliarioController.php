@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Domiciliario;
 use App\Models\User;
+use App\Models\Venta;
+use App\Models\TarifaDomicilio;
+use App\Models\Domicilio;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -72,7 +75,58 @@ class DomiciliarioController extends Controller
             abort(403);
         }
 
-        return view('domiciliarios.show', compact('d'));
+        $ventasDisponibles = Venta::with('cliente')
+            ->whereDoesntHave('domicilio')
+            ->latest()
+            ->limit(50)
+            ->get();
+
+        return view('domiciliarios.show', compact('d', 'ventasDisponibles'));
+    }
+
+    public function registrarEntregaManual(Request $request, $id)
+    {
+        $d = Domiciliario::findOrFail($id);
+        $user = auth()->user();
+        abort_unless($user->isAdmin() || $user->domiciliario?->id === $d->id, 403);
+
+        $data = $request->validate([
+            'venta_id'  => 'nullable|exists:ventas,id',
+            'cliente_nombre' => 'required_without:venta_id|nullable|string|max:150',
+            'cliente_telefono' => 'required_without:venta_id|nullable|string|max:30',
+            'direccion' => 'required|string|max:255',
+            'ciudad'    => 'nullable|string|max:100',
+            'comentarios' => 'nullable|string|max:500',
+        ]);
+
+        $venta = !empty($data['venta_id']) ? Venta::findOrFail($data['venta_id']) : null;
+        if ($venta && $venta->domicilio()->exists()) {
+            return back()->withErrors(['venta_id' => 'Esta venta ya tiene un domicilio registrado.']);
+        }
+
+        $tarifa = TarifaDomicilio::vigente();
+        Domicilio::create([
+            'venta_id'              => $venta?->id,
+            'origen'                => $venta ? 'venta' : 'externa',
+            'cliente_nombre'        => $data['cliente_nombre'] ?? null,
+            'cliente_telefono'      => $data['cliente_telefono'] ?? null,
+            'domiciliario_id'       => $d->id,
+            'direccion'             => $data['direccion'],
+            'ciudad'                => $data['ciudad'] ?? null,
+            'pais'                  => 'Colombia',
+            'estado'                => 'entregado',
+            'costo_envio'           => $tarifa?->monto ?? 15000,
+            'tarifa_id'             => $tarifa?->id,
+            'tarifa_monto'          => $tarifa?->monto ?? 15000,
+            'fecha_aceptacion'      => now(),
+            'fecha_recogida'        => now(),
+            'fecha_entrega_real'    => now(),
+            'comentarios'           => $data['comentarios'] ?? 'Registrado manualmente.',
+            'cobrar_en_entrega'     => false,
+        ]);
+
+        return redirect()->route('domiciliarios.show', $d)
+            ->with('success', 'Entrega manual registrada correctamente.');
     }
 
     public function edit($id)

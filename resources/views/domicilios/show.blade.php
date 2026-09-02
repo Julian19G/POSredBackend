@@ -30,12 +30,14 @@
                     <dl class="row mb-0">
                         <dt class="col-sm-4 text-muted small">Cliente</dt>
                         <dd class="col-sm-8">
-                            @if($domicilio->venta->cliente ?? null)
+                            @if($domicilio->venta?->cliente)
                                 <a href="{{ route('clientes.show', $domicilio->venta->cliente_id) }}">
                                     {{ $domicilio->venta->cliente->nombre }}
                                 </a>
                                 <br><small class="text-muted">{{ $domicilio->venta->cliente->telefono }}</small>
-                            @else —
+                            @else
+                                {{ $domicilio->cliente_nombre ?? '—' }}
+                                @if($domicilio->cliente_telefono)<br><small class="text-muted">{{ $domicilio->cliente_telefono }}</small>@endif
                             @endif
                         </dd>
 
@@ -78,9 +80,13 @@
                         <dd class="col-sm-8">{{ $domicilio->fecha_entrega->format('d/m/Y H:i') }}</dd>
                         @endif
 
-                        <dt class="col-sm-4 text-muted small">Venta</dt>
+                        <dt class="col-sm-4 text-muted small">Origen</dt>
                         <dd class="col-sm-8">
-                            <a href="{{ route('ventas.show', $domicilio->venta_id) }}">#{{ $domicilio->venta_id }}</a>
+                            @if($domicilio->venta_id)
+                                Venta <a href="{{ route('ventas.show', $domicilio->venta_id) }}">#{{ $domicilio->venta_id }}</a>
+                            @else
+                                Externa / sin venta
+                            @endif
                         </dd>
                     </dl>
                 </div>

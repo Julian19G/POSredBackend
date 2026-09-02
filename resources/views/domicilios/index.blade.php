@@ -26,7 +26,7 @@
         <tbody>
             @forelse($domicilios as $domicilio)
                 @php
-                    $cliente = $domicilio->venta->cliente ?? null;
+                    $cliente = $domicilio->venta?->cliente;
                     $estado  = $domicilio->estado ?? 'pendiente';
                     $badgeColor = match($estado) {
                         'pendiente'  => 'secondary',
@@ -39,11 +39,13 @@
                 <tr>
                     <td>{{ $domicilio->id }}</td>
                     <td>
-                        <a href="{{ route('ventas.show', $domicilio->venta_id) }}">
-                            #{{ $domicilio->venta_id }}
-                        </a>
+                        @if($domicilio->venta_id)
+                            <a href="{{ route('ventas.show', $domicilio->venta_id) }}">#{{ $domicilio->venta_id }}</a>
+                        @else
+                            <span class="badge bg-secondary">Externa</span>
+                        @endif
                     </td>
-                    <td>{{ $cliente->nombre ?? '—' }}</td>
+                    <td>{{ $domicilio->nombre_cliente }}</td>
                     <td>{{ $domicilio->direccion }}</td>
                     <td>
                         <span class="badge bg-{{ $badgeColor }}">

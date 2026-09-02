@@ -288,6 +288,8 @@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/css/app.css', 'resources/js/app.js']); ?>
+
     <style>
         html { transition: background-color .2s ease; }
         body { transition: background-color .2s ease, color .2s ease; }
@@ -318,16 +320,17 @@
 </head>
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm sticky-top">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm sticky-top pos-navbar">
     <div class="container-fluid px-4">
 
         <a class="navbar-brand fw-bold" href="<?php echo e(route('dashboard')); ?>">🏪 POS</a>
 
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarPOS">
+        <button class="navbar-toggler" type="button" data-pos-navbar-toggle="navbarPOS"
+            aria-controls="navbarPOS" aria-expanded="false" aria-label="Abrir navegación">
             <span class="navbar-toggler-icon"></span>
         </button>
 
-        <div class="collapse navbar-collapse" id="navbarPOS">
+        <div class="navbar-collapse pos-navbar-collapse" id="navbarPOS">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
 
                 <li class="nav-item">
@@ -336,7 +339,12 @@
                 </li>
 
                 <?php if(auth()->guard()->check()): ?>
-                <?php if(!auth()->user()->isDomiciliario()): ?>
+                <?php
+                    $usuario = auth()->user();
+                    $puedeGestionarOperaciones = $usuario->puedeGestionarOperaciones();
+                    $puedeGestionarAdministracion = $usuario->puedeGestionarAdministracion();
+                ?>
+                <?php if($puedeGestionarOperaciones): ?>
 
                 <li class="nav-item">
                     <a class="nav-link <?php echo e(request()->routeIs('ventas.*') ? 'active fw-semibold' : ''); ?>"
@@ -361,7 +369,7 @@
                     </a>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="<?php echo e(route('productos.index')); ?>">📦 Productos</a></li>
-                        <?php if(auth()->user()->isAdmin()): ?>
+                        <?php if($puedeGestionarAdministracion): ?>
                             <li><a class="dropdown-item" href="<?php echo e(route('productos.index', ['stock_bajo' => 1])); ?>">⚠️ Stock bajo</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header">Configuración del catálogo</h6></li>
@@ -375,7 +383,7 @@
                 <?php endif; ?> 
 
                 
-                <?php if(auth()->user()->isDomiciliario()): ?>
+                <?php if($usuario->tienePerfilDomiciliario() && !$usuario->isAdmin()): ?>
                     <li class="nav-item">
                         <a class="nav-link <?php echo e(request()->routeIs('rutas.disponibles') ? 'active fw-semibold' : ''); ?>"
                            href="<?php echo e(route('rutas.disponibles')); ?>">📦 Disponibles</a>
@@ -394,7 +402,7 @@
                             <li><a class="dropdown-item" href="<?php echo e(route('domicilios.index')); ?>">📋 Lista</a></li>
                             <li><a class="dropdown-item" href="<?php echo e(route('domicilios.mapa')); ?>">🗺 Mapa</a></li>
                             <li><a class="dropdown-item" href="<?php echo e(route('rutas.disponibles')); ?>">📦 Disponibles</a></li>
-                            <?php if(auth()->user()->isAdmin()): ?>
+                            <?php if($puedeGestionarAdministracion): ?>
                                 <li><a class="dropdown-item" href="<?php echo e(route('rutas.index')); ?>">🛵 Todas las rutas</a></li>
                             <?php endif; ?>
                         </ul>
@@ -402,7 +410,7 @@
                 <?php endif; ?>
 
                 
-                <?php if(auth()->user()->isAdmin()): ?>
+                <?php if($puedeGestionarAdministracion): ?>
 
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle <?php echo e(request()->routeIs('vendedores.*') || request()->routeIs('domiciliarios.*') ? 'active fw-semibold' : ''); ?>"
@@ -463,7 +471,7 @@
                 <?php endif; ?>
 
                 <?php if(auth()->guard()->check()): ?>
-                <?php if(!auth()->user()->isDomiciliario()): ?>
+                <?php if($puedeGestionarOperaciones): ?>
                     <a href="<?php echo e(route('ventas.create')); ?>" class="btn btn-success btn-sm">➕ Nueva venta</a>
                 <?php endif; ?>
                 <?php endif; ?>
@@ -499,7 +507,7 @@
     </div>
 </nav>
 
-<main class="py-3">
+<main class="py-3 <?php echo e(request()->routeIs('dashboard') ? 'pos-dashboard-content' : 'pos-tailwind-content'); ?>">
     <div class="container-fluid px-4">
         <?php echo $__env->yieldContent('content'); ?>
     </div>
@@ -509,6 +517,14 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/js/select2.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    document.querySelector('[data-pos-navbar-toggle]')?.addEventListener('click', function () {
+        const menu = document.getElementById(this.dataset.posNavbarToggle);
+        const abierto = menu.classList.toggle('show');
+        this.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+    });
+</script>
 
 <script>
 (function () {

@@ -190,9 +190,10 @@
                                     <input type="text" name="pais" class="form-control" value="Colombia">
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Costo de envío ($)</label>
+                                     <label class="form-label fw-semibold">Tarifa de domicilio ($)</label>
                                     <input type="number" name="costo_envio" id="costo_envio_input"
-                                           class="form-control" min="0" step="0.01" placeholder="0.00" value="0">
+                                         class="form-control" value="15000" readonly>
+                                     <div class="form-text">$15.000 de 6:00 a. m. a 8:59 p. m.; $20.000 de 9:00 p. m. a 5:59 a. m.</div>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold">Fecha estimada de entrega</label>
@@ -615,9 +616,11 @@ function buildResumen() {
 
     // Envío
     const esEnvio = document.getElementById('envio_select').value === '1';
+    const horaActual = new Date().getHours();
     const costoEnvio = esEnvio
-        ? (parseFloat(document.getElementById('costo_envio_input').value) || 0)
+        ? (horaActual >= 21 || horaActual < 6 ? 20000 : 15000)
         : 0;
+    document.getElementById('costo_envio_input').value = costoEnvio;
     const eLine = document.getElementById('r-envio-line');
     if (esEnvio) {
         document.getElementById('r-envio').textContent = fmt(costoEnvio);

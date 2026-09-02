@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class TarifaDomicilio extends Model
 {
+    public const MONTO_DIURNO = 15000;
+    public const MONTO_NOCTURNO = 20000;
+
     protected $table = 'tarifas_domicilio';
 
     protected $fillable = [
@@ -28,7 +31,7 @@ class TarifaDomicilio extends Model
     {
         $hora = now()->format('H:i:s');
 
-        return self::where('activo', true)
+        $tarifa = self::where('activo', true)
             ->get()
             ->first(function ($tarifa) use ($hora) {
                 $inicio = $tarifa->hora_inicio;
@@ -40,5 +43,13 @@ class TarifaDomicilio extends Model
                 }
                 return $hora >= $inicio && $hora < $fin;
             });
+
+        if ($tarifa) {
+            $tarifa->monto = $hora >= '21:00:00' || $hora < '06:00:00'
+                ? self::MONTO_NOCTURNO
+                : self::MONTO_DIURNO;
+        }
+
+        return $tarifa;
     }
 }

@@ -147,6 +147,29 @@ unset($__errorArgs, $__bag); ?>
         </div>
     </div>
 
+    <?php if(isset($vendedor) && $vendedor->user_id): ?>
+    <div class="col-12 border-top pt-3 mt-2">
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="domiciliario_activo" id="domiciliario_activo" value="1"
+                   <?php echo e(old('domiciliario_activo', $vendedor->domiciliario?->activo ?? false) ? 'checked' : ''); ?>>
+            <label class="form-check-label fw-semibold" for="domiciliario_activo">También realiza domicilios</label>
+        </div>
+        <div class="mt-2" id="vehiculo-wrap">
+            <label class="form-label">Vehículo</label>
+            <select name="vehiculo" class="form-select">
+                <?php $__currentLoopData = ['moto' => 'Moto', 'bicicleta' => 'Bicicleta', 'pie' => 'A pie', 'carro' => 'Carro']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $value => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <option value="<?php echo e($value); ?>" <?php echo e(old('vehiculo', $vendedor->domiciliario?->vehiculo ?? 'moto') === $value ? 'selected' : ''); ?>><?php echo e($label); ?></option>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </select>
+        </div>
+        <small class="text-muted">Conservará su acceso de vendedor y también podrá tomar rutas.</small>
+    </div>
+    <?php elseif(isset($vendedor)): ?>
+    <div class="col-12">
+        <div class="alert alert-warning mb-0">Este perfil aún no está vinculado a una cuenta de usuario. Vincúlalo desde <strong>Usuarios</strong> antes de habilitar sus domicilios.</div>
+    </div>
+    <?php endif; ?>
+
     <div class="col-12">
         <label class="form-label fw-semibold">Notas</label>
         <textarea name="notas" class="form-control <?php $__errorArgs = ['notas'];

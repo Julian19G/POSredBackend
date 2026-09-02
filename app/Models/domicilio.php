@@ -11,6 +11,9 @@ class Domicilio extends Model
 
     protected $fillable = [
         'venta_id',
+        'origen',
+        'cliente_nombre',
+        'cliente_telefono',
         'zona_id',
         'domiciliario_id',
         'ruta_id',
@@ -51,6 +54,16 @@ class Domicilio extends Model
         'latitud'            => 'float',
         'longitud'           => 'float',
     ];
+
+    public function getNombreClienteAttribute(): string
+    {
+        return $this->venta?->cliente?->nombre ?? $this->cliente_nombre ?? '—';
+    }
+
+    public function getTelefonoClienteAttribute(): ?string
+    {
+        return $this->venta?->cliente?->telefono ?? $this->cliente_telefono;
+    }
 
     public function venta()
     {

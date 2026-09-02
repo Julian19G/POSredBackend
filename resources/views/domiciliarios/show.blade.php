@@ -15,6 +15,53 @@
         @endif
     </div>
 
+    @if(auth()->user()->isAdmin() || auth()->user()->domiciliario?->id === $d->id)
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white fw-semibold">📝 Registrar entrega manual</div>
+        <div class="card-body">
+            @if($errors->any())
+                <div class="alert alert-danger">{{ $errors->first() }}</div>
+            @endif
+            <form action="{{ route('domiciliarios.entrega-manual', $d) }}" method="POST" class="row g-3">
+                @csrf
+                <div class="col-md-4">
+                    <label class="form-label">Venta</label>
+                    <select name="venta_id" class="form-select">
+                        <option value="">Externa / sin venta</option>
+                        @foreach($ventasDisponibles as $venta)
+                            <option value="{{ $venta->id }}">#{{ $venta->id }} · {{ $venta->cliente->nombre ?? 'Sin cliente' }} · ${{ number_format($venta->total, 0, ',', '.') }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Cliente externo</label>
+                    <input type="text" name="cliente_nombre" class="form-control" placeholder="Nombre del cliente">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Teléfono externo</label>
+                    <input type="text" name="cliente_telefono" class="form-control" placeholder="Teléfono del cliente">
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label">Dirección</label>
+                    <input type="text" name="direccion" class="form-control" required placeholder="Dirección de entrega">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Ciudad / barrio</label>
+                    <input type="text" name="ciudad" class="form-control">
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Comentarios</label>
+                    <input type="text" name="comentarios" class="form-control" placeholder="Nota opcional">
+                </div>
+                <div class="col-12 d-flex justify-content-between align-items-center">
+                    <small class="text-muted">Puedes seleccionar una venta o registrar una entrega externa. Se asignará la tarifa fija vigente.</small>
+                    <button class="btn btn-success">✅ Registrar entrega</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endif
+
     {{-- Métricas rápidas --}}
     <div class="row g-3 mb-4">
         <div class="col-sm-4">

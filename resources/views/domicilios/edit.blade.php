@@ -126,9 +126,10 @@
                         </select>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label fw-semibold">Costo de envío ($)</label>
-                        <input type="number" name="costo_envio" class="form-control" min="0" step="1000"
-                               value="{{ old('costo_envio', $domicilio->costo_envio) }}">
+                           <label class="form-label fw-semibold">Tarifa de domicilio ($)</label>
+                           <input type="text" class="form-control" readonly
+                               value="{{ number_format($domicilio->tarifa_monto ?? $domicilio->costo_envio ?? 0, 0, ',', '.') }}">
+                           <div class="form-text">La tarifa se fija al crear el domicilio.</div>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold">Fecha estimada entrega</label>

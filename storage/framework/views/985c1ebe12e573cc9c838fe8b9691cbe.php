@@ -30,13 +30,16 @@
                     <dl class="row mb-0">
                         <dt class="col-sm-4 text-muted small">Cliente</dt>
                         <dd class="col-sm-8">
-                            <?php if($domicilio->venta->cliente ?? null): ?>
+                            <?php if($domicilio->venta?->cliente): ?>
                                 <a href="<?php echo e(route('clientes.show', $domicilio->venta->cliente_id)); ?>">
                                     <?php echo e($domicilio->venta->cliente->nombre); ?>
 
                                 </a>
                                 <br><small class="text-muted"><?php echo e($domicilio->venta->cliente->telefono); ?></small>
-                            <?php else: ?> —
+                            <?php else: ?>
+                                <?php echo e($domicilio->cliente_nombre ?? '—'); ?>
+
+                                <?php if($domicilio->cliente_telefono): ?><br><small class="text-muted"><?php echo e($domicilio->cliente_telefono); ?></small><?php endif; ?>
                             <?php endif; ?>
                         </dd>
 
@@ -80,9 +83,13 @@
                         <dd class="col-sm-8"><?php echo e($domicilio->fecha_entrega->format('d/m/Y H:i')); ?></dd>
                         <?php endif; ?>
 
-                        <dt class="col-sm-4 text-muted small">Venta</dt>
+                        <dt class="col-sm-4 text-muted small">Origen</dt>
                         <dd class="col-sm-8">
-                            <a href="<?php echo e(route('ventas.show', $domicilio->venta_id)); ?>">#<?php echo e($domicilio->venta_id); ?></a>
+                            <?php if($domicilio->venta_id): ?>
+                                Venta <a href="<?php echo e(route('ventas.show', $domicilio->venta_id)); ?>">#<?php echo e($domicilio->venta_id); ?></a>
+                            <?php else: ?>
+                                Externa / sin venta
+                            <?php endif; ?>
                         </dd>
                     </dl>
                 </div>

@@ -54,7 +54,6 @@ class DomicilioController extends Controller
             'longitud'              => 'nullable|numeric|between:-180,180',
             'referencia_ubicacion'  => 'nullable|string|max:255',
             'estado'                => 'nullable|in:pendiente,enviado,entregado,cancelado',
-            'costo_envio'           => 'nullable|numeric|min:0',
             'fecha_envio'           => 'nullable|date',
             'fecha_entrega'         => 'nullable|date',
             'comentarios'           => 'nullable|string|max:255',
@@ -102,7 +101,7 @@ class DomicilioController extends Controller
             ->map(function ($d) {
                 return [
                     'id'        => $d->id,
-                    'cliente'   => $d->venta->cliente->nombre ?? '—',
+                    'cliente'   => $d->nombre_cliente,
                     'direccion' => $d->direccion,
                     'zona'      => $d->zona->nombre ?? null,
                     'estado'    => $d->estado,

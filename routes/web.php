@@ -105,6 +105,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('sabores', SaborController::class)->parameters(['sabores' => 'sabor']);
 
     // Domicilios
+    Route::post('domiciliarios/{domiciliario}/entrega-manual', [DomiciliarioController::class, 'registrarEntregaManual'])->name('domiciliarios.entrega-manual');
     Route::get('domicilios/mapa', [DomicilioController::class, 'mapa'])->name('domicilios.mapa');
     Route::resource('domicilios', DomicilioController::class);
 

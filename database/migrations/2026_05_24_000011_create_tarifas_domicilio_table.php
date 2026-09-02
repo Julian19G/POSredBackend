@@ -26,7 +26,7 @@ return new class extends Migration
                 'nombre'              => 'Diurna',
                 'monto'               => 15000,
                 'hora_inicio'         => '06:00:00',
-                'hora_fin'            => '22:00:00',
+                'hora_fin'            => '21:00:00',
                 'comision_plataforma' => 2000,
                 'activo'              => true,
                 'created_at'          => now(),
@@ -35,7 +35,7 @@ return new class extends Migration
             [
                 'nombre'              => 'Nocturna',
                 'monto'               => 20000,
-                'hora_inicio'         => '22:00:00',
+                'hora_inicio'         => '21:00:00',
                 'hora_fin'            => '06:00:00',
                 'comision_plataforma' => 3000,
                 'activo'              => true,

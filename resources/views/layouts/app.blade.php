@@ -320,16 +320,17 @@
 </head>
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm sticky-top">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm sticky-top pos-navbar">
     <div class="container-fluid px-4">
 
         <a class="navbar-brand fw-bold" href="{{ route('dashboard') }}">🏪 POS</a>
 
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarPOS">
+        <button class="navbar-toggler" type="button" data-pos-navbar-toggle="navbarPOS"
+            aria-controls="navbarPOS" aria-expanded="false" aria-label="Abrir navegación">
             <span class="navbar-toggler-icon"></span>
         </button>
 
-        <div class="collapse navbar-collapse" id="navbarPOS">
+        <div class="navbar-collapse pos-navbar-collapse" id="navbarPOS">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
 
                 <li class="nav-item">
@@ -338,7 +339,12 @@
                 </li>
 
                 @auth
-                @if(!auth()->user()->isDomiciliario())
+                @php
+                    $usuario = auth()->user();
+                    $puedeGestionarOperaciones = $usuario->puedeGestionarOperaciones();
+                    $puedeGestionarAdministracion = $usuario->puedeGestionarAdministracion();
+                @endphp
+                @if($puedeGestionarOperaciones)
 
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('ventas.*') ? 'active fw-semibold' : '' }}"
@@ -363,7 +369,7 @@
                     </a>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="{{ route('productos.index') }}">📦 Productos</a></li>
-                        @if(auth()->user()->isAdmin())
+                        @if($puedeGestionarAdministracion)
                             <li><a class="dropdown-item" href="{{ route('productos.index', ['stock_bajo' => 1]) }}">⚠️ Stock bajo</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header">Configuración del catálogo</h6></li>
@@ -377,7 +383,7 @@
                 @endif {{-- !isDomiciliario --}}
 
                 {{-- Domicilios / Rutas --}}
-                @if(auth()->user()->isDomiciliario())
+                @if($usuario->tienePerfilDomiciliario() && !$usuario->isAdmin())
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('rutas.disponibles') ? 'active fw-semibold' : '' }}"
                            href="{{ route('rutas.disponibles') }}">📦 Disponibles</a>
@@ -396,7 +402,7 @@
                             <li><a class="dropdown-item" href="{{ route('domicilios.index') }}">📋 Lista</a></li>
                             <li><a class="dropdown-item" href="{{ route('domicilios.mapa') }}">🗺 Mapa</a></li>
                             <li><a class="dropdown-item" href="{{ route('rutas.disponibles') }}">📦 Disponibles</a></li>
-                            @if(auth()->user()->isAdmin())
+                            @if($puedeGestionarAdministracion)
                                 <li><a class="dropdown-item" href="{{ route('rutas.index') }}">🛵 Todas las rutas</a></li>
                             @endif
                         </ul>
@@ -404,7 +410,7 @@
                 @endif
 
                 {{-- Equipo y Administración: solo admins --}}
-                @if(auth()->user()->isAdmin())
+                @if($puedeGestionarAdministracion)
 
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle {{ request()->routeIs('vendedores.*') || request()->routeIs('domiciliarios.*') ? 'active fw-semibold' : '' }}"
@@ -465,7 +471,7 @@
                 @endauth
 
                 @auth
-                @if(!auth()->user()->isDomiciliario())
+                @if($puedeGestionarOperaciones)
                     <a href="{{ route('ventas.create') }}" class="btn btn-success btn-sm">➕ Nueva venta</a>
                 @endif
                 @endauth
@@ -500,7 +506,7 @@
     </div>
 </nav>
 
-<main class="py-3">
+<main class="py-3 {{ request()->routeIs('dashboard') ? 'pos-dashboard-content' : 'pos-tailwind-content' }}">
     <div class="container-fluid px-4">
         @yield('content')
     </div>
@@ -510,6 +516,14 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/js/select2.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    document.querySelector('[data-pos-navbar-toggle]')?.addEventListener('click', function () {
+        const menu = document.getElementById(this.dataset.posNavbarToggle);
+        const abierto = menu.classList.toggle('show');
+        this.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+    });
+</script>
 
 <script>
 (function () {

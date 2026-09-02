@@ -43,7 +43,7 @@
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <div>
                     <span class="badge bg-secondary me-1">{{ $i + 1 }}</span>
-                    <strong class="fs-6">{{ $d->venta->cliente->nombre ?? '—' }}</strong>
+                    <strong class="fs-6">{{ $d->nombre_cliente }}</strong>
                     @if($d->tipo === 'express')
                         <span class="badge bg-warning text-dark ms-1">⚡ Express</span>
                     @endif
@@ -63,12 +63,12 @@
                     <div class="p-3 rounded-2" style="background:#e8f5e9">
                         <div class="text-muted small fw-bold mb-1">🏠 ENTREGA</div>
                         <div class="small">{{ $d->instrucciones_entrega ?? $d->direccion }}</div>
-                        @if($d->venta->cliente->telefono ?? null)
+                        @if($d->telefono_cliente)
                             <div class="small text-primary mt-1">
-                                📞 {{ $d->venta->cliente->telefono }}
+                                📞 {{ $d->telefono_cliente }}
                             </div>
                         @endif
-                        @if($d->venta->cliente->whatsapp ?? null)
+                        @if($d->venta?->cliente?->whatsapp)
                             <a href="https://wa.me/57{{ preg_replace('/\D/', '', $d->venta->cliente->whatsapp) }}"
                                target="_blank"
                                class="btn btn-sm btn-outline-success mt-1" style="font-size:.75rem">
@@ -118,7 +118,7 @@
                             <form action="{{ route('rutas.entregar', $d->id) }}" method="POST">
                                 @csrf @method('PATCH')
                                 <div class="modal-header">
-                                    <h5 class="modal-title">Confirmar entrega — {{ $d->venta->cliente->nombre ?? '' }}</h5>
+                                    <h5 class="modal-title">Confirmar entrega — {{ $d->nombre_cliente }}</h5>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                 </div>
                                 <div class="modal-body">

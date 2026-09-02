@@ -76,6 +76,11 @@ class Vendedor extends Model
         return $this->belongsTo(\App\Models\User::class);
     }
 
+    public function domiciliario()
+    {
+        return $this->hasOne(Domiciliario::class, 'user_id', 'user_id');
+    }
+
     public function ventas()
     {
         return $this->hasMany(Venta::class);

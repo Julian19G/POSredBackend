@@ -3,13 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\Vendedor;
+use App\Models\Domiciliario;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class VendedorController extends Controller
 {
     public function index()
     {
-        $vendedores = Vendedor::withCount('ventas')
+        $vendedores = Vendedor::with('domiciliario')
+            ->withCount('ventas')
             ->withSum('ventas', 'total')
             ->orderBy('nombre')
             ->get();
@@ -45,6 +48,7 @@ class VendedorController extends Controller
 
     public function show(Vendedor $vendedor)
     {
+        $vendedor->load('domiciliario');
         $ventas = $vendedor->ventas()->with('cliente')->latest()->paginate(10);
 
         $comisionesPendientes = $vendedor->comisiones()
@@ -63,10 +67,17 @@ class VendedorController extends Controller
             'total_comisionado'  => $vendedor->totalComisionado(),
             'total_pagado'       => $vendedor->totalPagado(),
             'saldo_pendiente'    => $vendedor->saldoPendiente(),
+            'domicilios_entregados' => $vendedor->domiciliario?->domicilios()->where('estado', 'entregado')->count() ?? 0,
+            'ganancia_domicilios'   => $vendedor->domiciliario?->gananciaTotal() ?? 0,
         ];
+        $stats['total_ganado'] = $stats['total_comisionado'] + $stats['ganancia_domicilios'];
+
+        $domicilios = $vendedor->domiciliario
+            ? $vendedor->domiciliario->domicilios()->with('venta.cliente')->latest()->paginate(10, ['*'], 'domicilios_page')
+            : collect();
 
         return view('vendedores.show', compact(
-            'vendedor', 'ventas', 'comisionesPendientes', 'liquidaciones', 'stats'
+            'vendedor', 'ventas', 'comisionesPendientes', 'liquidaciones', 'stats', 'domicilios'
         ));
     }
 
@@ -85,12 +96,30 @@ class VendedorController extends Controller
             'instagram'            => 'nullable|string|max:100',
             'comision_porcentaje'  => 'nullable|numeric|min:0|max:100',
             'notas'                => 'nullable|string',
+            'domiciliario_activo'  => 'nullable|boolean',
+            'vehiculo'             => 'required_if:domiciliario_activo,1|in:moto,bicicleta,pie,carro',
         ]);
 
         $validated['activo']              = $request->has('activo');
         $validated['comision_porcentaje'] = $validated['comision_porcentaje'] ?? 0;
 
-        $vendedor->update($validated);
+        DB::transaction(function () use ($vendedor, $validated, $request) {
+            $vendedor->update($validated);
+
+            if ($request->boolean('domiciliario_activo')) {
+                Domiciliario::updateOrCreate(
+                    ['user_id' => $vendedor->user_id],
+                    [
+                        'nombre' => $vendedor->nombre,
+                        'telefono' => $vendedor->telefono,
+                        'vehiculo' => $request->vehiculo,
+                        'activo' => true,
+                    ]
+                );
+            } elseif ($vendedor->domiciliario) {
+                $vendedor->domiciliario->update(['activo' => false]);
+            }
+        });
 
         return redirect()->route('vendedores.index')
             ->with('success', 'Vendedor actualizado correctamente.');
