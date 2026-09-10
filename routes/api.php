@@ -714,3 +714,5 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
 });
+
+Route::get('/descuentos/activos', [DescuentoController::class, 'apiActivos']);

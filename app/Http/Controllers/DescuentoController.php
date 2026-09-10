@@ -253,4 +253,50 @@ public function apiProductos(Request $request)
 
     return response()->json(['productos' => $productos]);
 }
+
+
+public function apiActivos()
+{
+    $ahora = now();
+
+    $descuentos = Descuento::where('activo', true)
+        ->where('aplicable_manual', false)
+        ->where('fecha_inicio', '<=', $ahora)
+        ->where('fecha_fin', '>=', $ahora)
+        ->with(['productos:id', 'categorias:id'])
+        ->get();
+
+    $productoIds  = $descuentos->pluck('productos')->flatten()->pluck('id');
+    $categoriaIds = $descuentos->pluck('categorias')->flatten()->pluck('id');
+
+    $productos = Producto::activos()
+        ->where(function ($q) use ($productoIds, $categoriaIds) {
+            $q->whereIn('id', $productoIds)
+              ->orWhereIn('categoria_id', $categoriaIds);
+        })
+        ->with('variantes')
+        ->get();
+
+    $resultado = $productos->map(function ($producto) {
+        $descuento = $producto->mejorDescuento();
+        if (!$descuento || $producto->variantes->isEmpty()) return null;
+
+        $precioOriginal = (float) $producto->variantes->min('precio');
+        $precioFinal    = (float) $producto->precioConDescuento($precioOriginal);
+        $porcentaje     = $descuento->tipo === 'porcentaje'
+            ? (int) $descuento->valor
+            : ($precioOriginal > 0 ? round((1 - $precioFinal / $precioOriginal) * 100) : 0);
+
+        return [
+            'id'              => $producto->id,
+            'nombre'          => $producto->nombre,
+            'imagen'          => $producto->imagen ? asset('storage/' . $producto->imagen) : null,
+            'precioOriginal'  => $precioOriginal,
+            'precioDescuento' => $precioFinal,
+            'porcentaje'      => $porcentaje,
+        ];
+    })->filter()->values();
+
+    return response()->json($resultado);
+}
 }
